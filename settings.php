@@ -33,7 +33,7 @@ if(!class_exists('WP_referralcandy_Settings'))
         	// add your setting's fields
             add_settings_field(
                 'wp_referralcandy-setting_appid', 
-                'App ID', 
+                'API Access ID', 
                 array(&$this, 'settings_field_input_text'), 
                 'wp_referralcandy', 
                 'wp_referralcandy-section',
@@ -43,7 +43,7 @@ if(!class_exists('WP_referralcandy_Settings'))
             );
             add_settings_field(
                 'wp_referralcandy-setting_key', 
-                'Secret key', 
+                'API Secret Key', 
                 array(&$this, 'settings_field_input_text'), 
                 'wp_referralcandy', 
                 'wp_referralcandy-section',
@@ -57,7 +57,7 @@ if(!class_exists('WP_referralcandy_Settings'))
         public function settings_section_wp_referralcandy()
         {
             // Think of this as help text for the section.
-            echo 'Please enter App ID and Secret Key from <a href="http://referralcandy.com" target="_blank">referralcandy.com</a>';
+            echo 'Please enter API Access ID and API Secret Key from <a href="http://referralcandy.com" target="_blank">referralcandy.com</a>';
         }
         
         /**
@@ -70,7 +70,7 @@ if(!class_exists('WP_referralcandy_Settings'))
             // Get the value of this setting
             $value = get_option($field);
             // echo a proper input type="text"
-            echo sprintf('<input type="text" name="%s" id="%s" value="%s" />', $field, $field, $value);
+            echo sprintf('<input type="text" name="%s" id="%s" value="%s" style="width:300px"/>', $field, $field, $value);
         } // END public function settings_field_input_text($args)
         
         /**
