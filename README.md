@@ -12,6 +12,7 @@ Integrates tracking codes from Referral Candy.
 6. Update your API Access ID and API Secret Key from Referral Candy
 7. Save and enjoy it :)
 
+![Settings Screen](http://i.imgur.com/eg0k0hb.png)
 
 Author
 ---
