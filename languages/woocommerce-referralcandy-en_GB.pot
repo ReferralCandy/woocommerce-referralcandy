@@ -1,0 +1,25 @@
+# Copyright (C) 2015 Referral Candy
+
+#: includes/class-wc-referralcandy-integration:25
+msgid "ReferralCandy"
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration:26
+msgid "Integrates tracking codes from <a href='http://www.referralcandy.com/' target='_blank'>ReferralCandy</a>"
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration:54
+msgid "App ID"
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration:56
+msgid "Enter with your App ID from ReferralCandy"
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration:61
+msgid "Secret key"
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration:63
+msgid "Enter with your Secret Key from ReferralCandy"
+msgstr ""
