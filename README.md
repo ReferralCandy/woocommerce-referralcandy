@@ -22,7 +22,7 @@ Installation
 6. Update your App ID and Secret Key from Referral Candy
 7. Save and enjoy it :)
 
-![Settings Screen](http://i.imgur.com/eg0k0hb.png)
+![Settings Screen](http://i.imgur.com/BauuFqX.png)
 
 Dependencies
 ---
