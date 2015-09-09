@@ -1,0 +1,28 @@
+# Copyright (C) 2015 ReferralCandy
+
+#: includes/class-wc-referralcandy-integration.php:25
+msgid "ReferralCandy"
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:26
+msgid ""
+"Get your App ID and Secret Key from <a target=\"_blank\" href=\"https://my."
+"referralcandy.com/settings\">ReferralCandy Admin Settings &gt; Plugin "
+"tokens</a>"
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:54
+msgid "App ID"
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:56
+msgid "Enter with your App ID from ReferralCandy"
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:61
+msgid "Secret key"
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:63
+msgid "Enter with your Secret Key from ReferralCandy"
+msgstr ""

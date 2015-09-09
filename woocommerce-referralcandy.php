@@ -5,6 +5,7 @@
  * Description: Automatically integrate your Woocommerce store with ReferracalCandy app
  * Author: ReferralCandy
  * Author URI: http://www.referralcandy.com
+ * Text Domain: woocommerce-referralcandy
  * Version: 1.0
  *
  * This program is free software: you can redistribute it and/or modify
