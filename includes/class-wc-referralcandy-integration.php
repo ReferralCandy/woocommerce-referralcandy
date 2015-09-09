@@ -23,7 +23,7 @@ class WC_Referralcandy_Integration extends WC_Integration {
 
 		$this->id                 = 'referralcandy';
 		$this->method_title       = __( 'ReferralCandy', 'woocommerce-referralcandy' );
-		$this->method_description = __( 'Integrates tracking codes from <a href="http://www.referralcandy.com/" target="_blank">ReferralCandy</a>.', 'woocommerce-referralcandy' );
+		$this->method_description = __( 'Get your App ID and Secret Key from <a href="https://my.referralcandy.com/settings">ReferralCandy Admin Settings &gt; Plugin tokens</a>', 'woocommerce-referralcandy' );
 
 		// Load the settings.
 		$this->init_form_fields();

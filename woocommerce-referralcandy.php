@@ -1,10 +1,10 @@
 <?php
 /**
- * Plugin Name: WooCommerce ReferralCandy
+ * Plugin Name: ReferralCandy for WooCommerce
  * Plugin URI: https://github.com/ReferralCandy/woocommerce-referralcandy
- * Description: Integrates tracking codes from ReferralCandy.
+ * Description: Automatically integrate your Woocommerce store with ReferracalCandy app
  * Author: ReferralCandy
- * Author URI: http://referralcandy.com
+ * Author URI: http://www.referralcandy.com
  * Version: 1.0
  *
  * This program is free software: you can redistribute it and/or modify
