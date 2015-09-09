@@ -2,7 +2,7 @@
 
 This plugin automatically integrates your WooCommerce store with ReferralCandy app using ReferralCandy Advanced Integration.
 
-![Settings Screen](http://i.imgur.com/BauuFqX.png)
+![ReferralCandy for WooCommerce Plugin Settings Page](assets/screenshot-1.png)
 
 # Installation 
 

@@ -32,6 +32,7 @@ This plugin automatically integrates your WooCommerce store with ReferralCandy a
 
 == Screenshots ==
 
+1. ReferralCandy for WooCommerce Plugin Settings Page
 
 == Changelog ==
 
