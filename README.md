@@ -1,4 +1,4 @@
-# WooCommerce ReferralCandy
+# ReferralCandy for WooCommerce
 
 This plugin automatically integrates your WooCommerce store with ReferralCandy app using ReferralCandy Advanced Integration.
 
