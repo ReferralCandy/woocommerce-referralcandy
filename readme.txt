@@ -4,7 +4,7 @@ Contributors: ReferralCandy
 Tags: referral program, customer referral program, refer-a-friend, tell-a-friend, marketing, customer acquisition, word-of-mouth, marketing app, viral marketing, social marketing, marketing, woocommerce
 Requires at least: 3.0
 Tested up to: 4.2
-Stable tag: 1.0
+Stable tag: trunk
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,7 @@ The 'ReferralCandy for WooCommerce' plugin automatically integrates ReferralCand
 
 == Description ==
 
-[ReferralCandy](http://www.referralcandy.com/) is a powerful tool allowing you to manage customer referral campaigns for your WooCommerce store.
+[ReferralCandy](http://www.referralcandy.com/) is a powerful tool allowing you to automate customer referral campaigns for your WooCommerce store.
 
 * Get more sales from word-of-mouth
 * Reward customers for referring their friends to your store
@@ -24,7 +24,7 @@ The 'ReferralCandy for WooCommerce' plugin automatically integrates ReferralCand
 * We send them a coupon code to share with friends
 * When their friends buy from you, the customer receives a referral reward
 
-Everybody wins: your original customer gets rewarded, their friends get a discount, you make more sales and get a new customer! We do all the referral tracking, so you don't have to do anything. 
+Everybody wins: your original customer gets rewarded, their friends get a discount, you make more sales and get a new customer! We do all the referral tracking, so you don't have to do anything.
 
 Learn about the details on our [How ReferralCandy Works](http://www.referralcandy.com/how-it-works) page.
 
