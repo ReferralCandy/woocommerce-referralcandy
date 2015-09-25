@@ -1,0 +1,8 @@
+{
+    "name": "referralcandy/woocommerce",
+    "description": "The 'ReferralCandy for WooCommerce' plugin automatically integrates ReferralCandy with your WooCommerce store",
+    "type": "wordpress-plugin",
+    "require": {
+        "composer/installers": "~1.0.12"
+    }
+}
