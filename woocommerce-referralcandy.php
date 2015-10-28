@@ -78,4 +78,26 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 	$WC_Referralcandy = new WC_Referralcandy( __FILE__ );
 
 	endif;
+
+
+  /**
+   * Redirect to settings page after activate plugin
+   */
+  function wc_referralcandy_plugin_activate() {
+		add_option('wc_referralcandy_plugin_do_activation_redirect', true);
+	}
+	function wc_referralcandy_plugin_redirect() {
+		if (get_option('wc_referralcandy_plugin_do_activation_redirect', false)) {
+			delete_option('wc_referralcandy_plugin_do_activation_redirect');
+			if (!isset($_GET['activate-multi'])) {
+				$setup_url = admin_url("admin.php?page=wc-settings&tab=integration&section=referralcandy");
+				wp_redirect($setup_url);
+				exit;
+			}
+		}
+	}
+
+	register_activation_hook(__FILE__, 'wc_referralcandy_plugin_activate');
+	add_action('admin_init', 'wc_referralcandy_plugin_redirect');
+
 }

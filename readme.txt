@@ -87,5 +87,8 @@ We maintain a list of FAQs on our [help page](http://help.referralcandy.com/)!
 
 == Changelog ==
 
+= 1.1 =
+* Automatically show the settings page after plugin activation.
+
 = 1.0 =
 * Use advanced integration to integrate with ReferralCandy app.
