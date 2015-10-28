@@ -1,6 +1,6 @@
 === ReferralCandy for WooCommerce ===
 
-Contributors: ReferralCandy
+Contributors: referralcandy
 Tags: referral program, customer referral program, refer-a-friend, tell-a-friend, marketing, customer acquisition, word-of-mouth, marketing app, viral marketing, social marketing, marketing, woocommerce
 Requires at least: 3.0
 Tested up to: 4.2
@@ -57,7 +57,9 @@ Learn more on our [Features](https://www.referralcandy.com/features) page.
 
 == Installation ==
 
-= From your WordPress dashboard =
+**Requires WooCommerce** 2.3.3 or higher
+
+= From your WordPress dashboard (recommended) =
 
 1. Go to **Plugins > Add New**
 2. Search for: `ReferralCandy`
