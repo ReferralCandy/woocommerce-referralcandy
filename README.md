@@ -6,11 +6,21 @@ This plugin automatically integrates your WooCommerce store with ReferralCandy a
 
 # Installation 
 
-1. Download [woocommerce-referralcandy-latest.zip](https://github.com/ReferralCandy/woocommerce-referralcandy/releases) file
-2. Login WooCommerce Dashboard with administrator account
+## From your WordPress dashboard
+
+1. Go to **Plugins > Add New**
+2. Search for: `ReferralCandy`
+3. Click on **Install Now** to install and activate the plugin
+
+## From WordPress.org
+
+1. Download the latest version zip file
 3. Go to **Plugins > Add New**
-4. Click on **Upload Plugin**, choose `woocommerce-referralcandy-latest.zip` to install
-5. Click on **Activate Plugin** after the plugin is installed successful
-6. Go to **WooCommerce > Settings > Integration > ReferralCandy**
-7. Fill-out your App ID and Secret Key (Get them from [ReferralCandy Admin Settings > Plugin tokens](https://my.referralcandy.com/settings))
-8. Click on **Save changes** and it's done!
+4. Click on **Upload Plugin** to upload the zip file
+5. Activate the plugin after the installation
+
+## Configure
+
+1. Go to **WooCommerce > Settings > Integration > ReferralCandy**
+2. Fill-out your App ID and Secret Key. You can get them from [ReferralCandy Admin Settings > Plugin tokens](https://my.referralcandy.com/settings))
+3. Click on **Save changes** and it's done!
