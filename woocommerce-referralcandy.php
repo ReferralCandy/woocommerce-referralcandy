@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ReferralCandy for WooCommerce
  * Plugin URI: https://github.com/ReferralCandy/woocommerce-referralcandy
- * Description: Automatically integrate your Woocommerce store with ReferracalCandy app
+ * Description: Automatically integrate your Woocommerce store with ReferralCandy app
  * Author: ReferralCandy
  * Author URI: http://www.referralcandy.com
  * Text Domain: woocommerce-referralcandy
