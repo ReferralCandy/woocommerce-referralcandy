@@ -23,7 +23,7 @@
  */
 
 if (!defined('ABSPATH')) {
-    exit; // Exit if accessed directly
+    die('Direct access is prohibited.');
 }
 
 if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_option('active_plugins')))) {
@@ -39,7 +39,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
 
                     add_filter('woocommerce_integrations', array($this, 'add_integration'));
                 } else {
-                    // throw an admin error if you like
+                    die('WC_Integration class does not exist.');
                 }
 
                 load_plugin_textdomain('woocommerce-referralcandy', false, dirname(plugin_basename(__FILE__)) . '/languages/');

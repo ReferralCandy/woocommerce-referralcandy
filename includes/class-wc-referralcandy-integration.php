@@ -8,7 +8,7 @@
  */
 
 if (!defined('ABSPATH')) {
-    exit; // Exit if accessed directly
+    die('Direct access is prohibited.');
 }
 
 if (!class_exists('WC_Referralcandy_Integration')) {
