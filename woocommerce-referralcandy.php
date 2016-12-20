@@ -20,84 +20,58 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
- *
  */
 
-if ( ! defined( 'ABSPATH' ) ) { 
+if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
-/**
- * Check if WooCommerce is active
- **/
-if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
+if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_option('active_plugins')))) {
+    if (!class_exists('WC_Referralcandy')) {
+        class WC_Referralcandy {
+            public function __construct() {
+                add_action('plugins_loaded', array($this, 'init'));
+            }
 
+            public function init() {
+                if (class_exists('WC_Integration')) {
+                    include_once 'includes/class-wc-referralcandy-integration.php';
 
-	if ( ! class_exists( 'WC_Referralcandy' ) ) :
+                    add_filter('woocommerce_integrations', array($this, 'add_integration'));
+                } else {
+                    // throw an admin error if you like
+                }
 
-	class WC_Referralcandy {
+                load_plugin_textdomain('woocommerce-referralcandy', false, dirname(plugin_basename(__FILE__)) . '/languages/');
+            }
 
-		/**
-		* Construct the plugin.
-		*/
-		public function __construct() {
-			add_action( 'plugins_loaded', array( $this, 'init' ) );
-		}
+            public function add_integration($integrations) {
+                $integrations[] = 'WC_Referralcandy_Integration';
 
-		/**
-		* Initialize the plugin.
-		*/
-		public function init() {
+                return $integrations;
+            }
+        }
 
-			// Checks if WooCommerce is installed.
-			if ( class_exists( 'WC_Integration' ) ) {
-				// Include our integration class.
-				include_once 'includes/class-wc-referralcandy-integration.php';
+        $WC_Referralcandy = new WC_Referralcandy(__FILE__);
+    }
 
-				// Register the integration.
-				add_filter( 'woocommerce_integrations', array( $this, 'add_integration' ) );
-			} else {
-				// throw an admin error if you like
-			}
+    function wc_referralcandy_plugin_activate() {
+        add_option('wc_referralcandy_plugin_do_activation_redirect', true);
+    }
 
-			// load languages
-			load_plugin_textdomain( 'woocommerce-referralcandy', false, dirname( plugin_basename(__FILE__) ) . '/languages/' );
+    function wc_referralcandy_plugin_redirect() {
+        if (get_option('wc_referralcandy_plugin_do_activation_redirect')) {
+            delete_option('wc_referralcandy_plugin_do_activation_redirect');
 
-		}
+            if (!isset($_GET['activate-multi'])) {
+                $setup_url = admin_url("admin.php?page=wc-settings&tab=integration&section=referralcandy");
+                wp_redirect($setup_url);
 
-		/**
-		 * Add a new integration to WooCommerce.
-		 */
-		public function add_integration( $integrations ) {
-			$integrations[] = 'WC_Referralcandy_Integration';
-			return $integrations;
-		}
+                exit;
+            }
+        }
+    }
 
-	}
-
-	$WC_Referralcandy = new WC_Referralcandy( __FILE__ );
-
-	endif;
-
-
-  /**
-   * Redirect to settings page after activate plugin
-   */
-  function wc_referralcandy_plugin_activate() {
-		add_option('wc_referralcandy_plugin_do_activation_redirect', true);
-	}
-	function wc_referralcandy_plugin_redirect() {
-		if (get_option('wc_referralcandy_plugin_do_activation_redirect', false)) {
-			delete_option('wc_referralcandy_plugin_do_activation_redirect');
-			if (!isset($_GET['activate-multi'])) {
-				$setup_url = admin_url("admin.php?page=wc-settings&tab=integration&section=referralcandy");
-				wp_redirect($setup_url);
-				exit;
-			}
-		}
-	}
-
-	register_activation_hook(__FILE__, 'wc_referralcandy_plugin_activate');
-	add_action('admin_init', 'wc_referralcandy_plugin_redirect');
-
+    register_activation_hook(__FILE__, 'wc_referralcandy_plugin_activate');
+    add_action('admin_init', 'wc_referralcandy_plugin_redirect');
 }
