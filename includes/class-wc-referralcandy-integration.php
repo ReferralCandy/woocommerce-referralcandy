@@ -61,7 +61,16 @@ if (!class_exists('WC_Referralcandy_Integration')) {
 
         public function woocommerce_order_referralcandy($order_id) {
             $order = wc_get_order($order_id);
-            $date = DateTime::createFromFormat('Y-m-d H:i:s', $order->order_date);
+
+            // https://en.support.wordpress.com/settings/general-settings/2/#timezone
+            // This option is set when a timezone name is selected
+            $timezone_string = get_option('timezone_string');
+
+            if (!empty($timezone_string)) {
+                $timestamp = DateTime::createFromFormat('Y-m-d H:i:s', $order->order_date, new DateTimeZone($timezone_string))->getTimestamp();
+            } else {
+                $timestamp = time();
+            }
 
             $divData = [
                 'id'                => 'refcandy-mint',
@@ -71,8 +80,8 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 'data-email'        => $order->billing_email,
                 'data-amount'       => $order->get_total(),
                 'data-currency'     => $order->get_order_currency(),
-                'data-timestamp'    => $date->getTimestamp(),
-                'data-signature'    => md5($order->billing_email.','.$order->billing_first_name.','.$order->get_total().','.$date->getTimestamp().','.$this->get_option('secret_key')),
+                'data-timestamp'    => $timestamp,
+                'data-signature'    => md5($order->billing_email.','.$order->billing_first_name.','.$order->get_total().','.$timestamp.','.$this->get_option('secret_key')),
             ];
 
             $div = '<div '.implode(' ', array_map(function ($v, $k) { return $k . '="'.addslashes($v).'"'; }, $divData, array_keys($divData))).'></div>';
