@@ -89,6 +89,9 @@ We maintain a list of FAQs on our [help page](http://help.referralcandy.com/)!
 
 == Changelog ==
 
+= 1.2 =
+* Implement proper timezone handling.
+
 = 1.1 =
 * Automatically show the settings page after plugin activation.
 
