@@ -89,6 +89,9 @@ We maintain a list of FAQs on our [help page](http://help.referralcandy.com/)!
 
 == Changelog ==
 
+= 1.3 =
+* Use the order number as the external reference ID.
+
 = 1.2 =
 * Implement proper timezone handling.
 
