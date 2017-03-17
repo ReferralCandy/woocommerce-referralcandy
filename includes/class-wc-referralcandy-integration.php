@@ -18,7 +18,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
 
             $this->id                 = 'referralcandy';
             $this->method_title       = __('ReferralCandy', 'woocommerce-referralcandy');
-            $this->method_description = __('Get your App ID and Secret Key from <a target="_blank" href="https://my.referralcandy.com/settings">ReferralCandy Admin Settings &gt; Plugin tokens</a>', 'woocommerce-referralcandy');
+            $this->method_description = __('Paste <a target="_blank" href="https://my.referralcandy.com/integration">your ReferralCandy plugin tokens</a> below:', 'woocommerce-referralcandy');
 
             // Load the settings.
             $this->init_form_fields();
@@ -41,15 +41,13 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 'app_id' => [
                     'title'             => __('App ID', 'woocommerce-referralcandy'),
                     'type'              => 'text',
-                    'description'       => __('Enter with your App ID from ReferralCandy', 'woocommerce-referralcandy'),
-                    'desc_tip'          => true,
+                    'desc_tip'          => false,
                     'default'           => ''
                 ],
                 'secret_key' => [
                     'title'             => __('Secret key', 'woocommerce-referralcandy'),
                     'type'              => 'text',
-                    'description'       => __('Enter with your Secret Key from ReferralCandy', 'woocommerce-referralcandy'),
-                    'desc_tip'          => true,
+                    'desc_tip'          => false,
                     'default'           => ''
                 ]
             ];
