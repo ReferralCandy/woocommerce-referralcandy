@@ -73,9 +73,9 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             $divData = [
                 'id'                => 'refcandy-mint',
                 'data-app-id'       => $this->get_option('app_id'),
-                'data-fname'        => $order->billing_first_name,
-                'data-lname'        => $order->billing_last_name,
-                'data-email'        => $order->billing_email,
+                'data-fname'        => urlencode($order->billing_first_name),
+                'data-lname'        => urlencode($order->billing_last_name),
+                'data-email'        => urlencode($order->billing_email),
                 'data-amount'       => $order->get_total(),
                 'data-currency'     => $order->get_order_currency(),
                 'data-timestamp'    => $timestamp,
