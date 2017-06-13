@@ -70,6 +70,9 @@ We maintain a list of FAQs on our [help page](http://help.referralcandy.com/)!
 
 == Changelog ==
 
+= 1.3.1 =
+* Fix data encoding cause invalid checksum.
+
 = 1.3 =
 * Use the order number as the external reference ID.
 
