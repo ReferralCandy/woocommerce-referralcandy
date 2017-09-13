@@ -79,7 +79,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 'data-amount'       => $order->get_total(),
                 'data-currency'     => $order->get_order_currency(),
                 'data-timestamp'    => $timestamp,
-                'data-signature'    => md5($order->billing_email.','.$order->billing_first_name.','.$order->get_total().','.$timestamp.','.$this->get_option('secret_key')),
+                'data-signature'    => md5(urlencode($order->billing_email).','.urlencode($order->billing_first_name).','.$order->get_total().','.$timestamp.','.$this->get_option('secret_key')),
                 'data-external-reference-id' => $order->get_order_number()
             ];
 
