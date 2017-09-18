@@ -69,22 +69,24 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             } else {
                 $timestamp = time();
             }
-
             $divData = [
                 'id'                => 'refcandy-mint',
-                'data-app-id'       => $this->get_option('app_id'),
-                'data-fname'        => urlencode($order->billing_first_name),
-                'data-lname'        => urlencode($order->billing_last_name),
-                'data-email'        => urlencode($order->billing_email),
-                'data-amount'       => $order->get_total(),
-                'data-currency'     => $order->get_order_currency(),
-                'data-timestamp'    => $timestamp,
-                'data-signature'    => md5(urlencode($order->billing_email).','.urlencode($order->billing_first_name).','.$order->get_total().','.$timestamp.','.$this->get_option('secret_key')),
-                'data-external-reference-id' => $order->get_order_number()
+                'data-app-id'       => $this->get_option('app_id')
             ];
-
             $div = '<div '.implode(' ', array_map(function ($v, $k) { return $k . '="'.addslashes($v).'"'; }, $divData, array_keys($divData))).'></div>';
-            $script = '<script>(function(e){var t,n,r,i,s,o,u,a,f,l,c,h,p,d,v;z="script";l="refcandy-purchase-js";c="refcandy-mint";p="go.referralcandy.com/purchase/";t="data-app-id";r={email:"a",fname:"b",lname:"c",amount:"d",currency:"e","accepts-marketing":"f",timestamp:"g","referral-code":"h",locale:"i","external-reference-id":"k",signature:"ab"};i=e.getElementsByTagName(z)[0];s=function(e,t){if(t){return""+e+"="+encodeURIComponent(t)}else{return""}};d=function(e){return""+p+h.getAttribute(t)+".js?aa=75&"};if(!e.getElementById(l)){h=e.getElementById(c);if(h){o=e.createElement(z);o.id=l;a=function(){var e;e=[];for(n in r){u=r[n];v=h.getAttribute("data-"+n);e.push(s(u,v))}return e}();o.src=""+e.location.protocol+"//"+d(h.getAttribute(t))+a.join("&");return i.parentNode.insertBefore(o,i)}}})(document);</script>';
+            $script = "<script>(function(e) {\n".
+                "var candy_data = {\n".
+                "  'app-id': '".($this->get_option('app_id'))."',\n".
+                "  fname: \"".urlencode($order->billing_first_name)."\",\n".
+                "  lname: \"".urlencode($order->billing_last_name)."\",\n".
+                "  email: \"".urlencode($order->billing_email)."\",\n".
+                "  amount: '".$order->get_total()."',\n".
+                "  currency: '".$order->get_order_currency()."',\n".
+                "  timestamp: '".$timestamp."',\n".
+                "  signature: '".md5($order->billing_email.','.$order->billing_first_name.','.$order->get_total().','.$timestamp.','.$this->get_option('secret_key'))."',\n".
+                "  'external-reference-id': '".$order->get_order_number()."'\n".
+                "}\n".
+                "var t,n,r,i,s,o,u,a,f,l,c,h,p,d,v;z='script';l='refcandy-purchase-js';c='refcandy-mint';p='go.referralcandy.com/purchase/';t='app-id';r={email:'a',fname:'b',lname:'c',amount:'d',currency:'e','accepts-marketing':'f',timestamp:'g','referral-code':'h',locale:'i','external-reference-id':'k',signature:'ab'};i=e.getElementsByTagName(z)[0];s=function(e,t){if(t){return''+e+'='+t}else{return''}};d=function(e){return''+p+candy_data[t]+'.js?aa=75&'};if(!e.getElementById(l)){h=e.getElementById(c);if(h){o=e.createElement(z);o.id=l;a=function(){var e;e=[];for(n in r){u=r[n];v=candy_data[n];e.push(s(u,v))}return e}();o.src=''+e.location.protocol+'//'+d(candy_data[t])+a.join('&');return i.parentNode.insertBefore(o,i)}}})(document);</script>";
             echo $div.$script;
         }
     }
