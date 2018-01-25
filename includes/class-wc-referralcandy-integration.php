@@ -75,7 +75,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 'data-app-id'       => $this->get_option('app_id'),
                 'data-fname'        => urlencode($order->billing_first_name),
                 'data-lname'        => urlencode($order->billing_last_name),
-                'data-email'        => urlencode($order->billing_email),
+                'data-email'        => $order->billing_email,
                 'data-amount'       => $order->get_total(),
                 'data-currency'     => $order->get_order_currency(),
                 'data-timestamp'    => $timestamp,
