@@ -58,7 +58,9 @@ if (!class_exists('WC_Referralcandy_Integration')) {
         }
 
         public function woocommerce_order_referralcandy($order_id) {
-            $order = wc_get_order($order_id);
+            $wc_pre_30 = version_compare( WC_VERSION, '3.0.0', '<');
+
+            $order = new WC_Order($order_id);
 
             // https://en.support.wordpress.com/settings/general-settings/2/#timezone
             // This option is set when a timezone name is selected
@@ -70,17 +72,24 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 $timestamp = time();
             }
 
+            $billing_first_name = $wc_pre_30? $order->billing_first_name : $order->get_billing_first_name();
+            $billing_last_name  = $wc_pre_30? $order->billing_last_name : $order->get_billing_last_name();
+            $billing_email      = $wc_pre_30? $order->billing_email : $order->get_billing_email();
+            $order_total        = $order->get_total();
+            $order_currency     = $wc_pre_30? $order->get_order_currency() : $order->get_currency();
+            $order_number       = $order->get_order_number();
+
             $divData = [
                 'id'                => 'refcandy-mint',
                 'data-app-id'       => $this->get_option('app_id'),
-                'data-fname'        => urlencode($order->billing_first_name),
-                'data-lname'        => urlencode($order->billing_last_name),
-                'data-email'        => urlencode($order->billing_email),
-                'data-amount'       => $order->get_total(),
-                'data-currency'     => $order->get_order_currency(),
+                'data-fname'        => urlencode($billing_first_name),
+                'data-lname'        => urlencode($billing_last_name),
+                'data-email'        => urlencode($billing_email),
+                'data-amount'       => $order_total,
+                'data-currency'     => $order_currency,
                 'data-timestamp'    => $timestamp,
-                'data-signature'    => md5($order->billing_email.','.$order->billing_first_name.','.$order->get_total().','.$timestamp.','.$this->get_option('secret_key')),
-                'data-external-reference-id' => $order->get_order_number()
+                'data-signature'    => md5($billing_email.','.$billing_first_name.','.$order_total.','.$timestamp.','.$this->get_option('secret_key')),
+                'data-external-reference-id' => $order_number
             ];
 
             $div = '<div '.implode(' ', array_map(function ($v, $k) { return $k . '="'.addslashes($v).'"'; }, $divData, array_keys($divData))).'></div>';

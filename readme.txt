@@ -70,6 +70,9 @@ We maintain a list of FAQs on our [help page](http://help.referralcandy.com/)!
 
 == Changelog ==
 
+= 1.3.4 =
+* Fixed deprecation messages for Woocommerce version 3.0 and above
+
 = 1.3.3 =
 * Fixed email encoding issue
 
