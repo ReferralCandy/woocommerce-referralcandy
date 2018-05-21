@@ -70,6 +70,9 @@ We maintain a list of FAQs on our [help page](http://help.referralcandy.com/)!
 
 == Changelog ==
 
+= 1.3.5 =
+* Fixed whitescreen of death issue when the Woocommerce plugin is deactivated while the ReferralCandy plugin is active
+
 = 1.3.4 =
 * Fixed deprecation messages for Woocommerce version 3.0 and above
 
