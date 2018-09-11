@@ -103,8 +103,8 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             $divData = [
                 'id'                => $this->is_option_enabled('popup')? 'refcandy-popsicle' : 'refcandy-mint',
                 'data-app-id'       => $this->get_option('app_id'),
-                'data-fname'        => urlencode($billing_first_name),
-                'data-lname'        => urlencode($billing_last_name),
+                'data-fname'        => $billing_first_name,
+                'data-lname'        => $billing_last_name,
                 'data-email'        => $this->is_option_enabled('popup')? $billing_email : $encoded_email,
                 'data-amount'       => $order_total,
                 'data-currency'     => $order_currency,
