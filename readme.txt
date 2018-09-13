@@ -71,7 +71,7 @@ We maintain a list of FAQs on our [help page](http://help.referralcandy.com/)!
 == Changelog ==
 
 = 1.3.7 =
-* Fixed issue where an order with spaces in the names produce checksum errors
+* Fixed issue where orders with spaces in the names or have no name at all produce checksum errors
 
 = 1.3.6 =
 * Added an option to enable the post-purchase popup widget on the checkout completed / thank you page
