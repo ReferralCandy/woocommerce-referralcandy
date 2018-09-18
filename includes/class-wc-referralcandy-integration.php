@@ -100,11 +100,18 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             $order_currency     = $wc_pre_30? $order->get_order_currency() : $order->get_currency();
             $order_number       = $order->get_order_number();
 
+            // make sure first name is always populated to avoid checksum errors
+            if (empty(strip_tags($billing_first_name)) === true) { // if first name is empty
+                // extract name from email (i.e. john from john+doe@domain.com or john_doe from john_doe@domain.com)
+                preg_match('/(?<extracted_name>\w+)/', $billing_email, $matches);
+                $billing_first_name = $matches['extracted_name']; // assign extracted name as first name
+            }
+
             $divData = [
                 'id'                => $this->is_option_enabled('popup')? 'refcandy-popsicle' : 'refcandy-mint',
                 'data-app-id'       => $this->get_option('app_id'),
-                'data-fname'        => urlencode($billing_first_name),
-                'data-lname'        => urlencode($billing_last_name),
+                'data-fname'        => $billing_first_name,
+                'data-lname'        => $billing_last_name,
                 'data-email'        => $this->is_option_enabled('popup')? $billing_email : $encoded_email,
                 'data-amount'       => $order_total,
                 'data-currency'     => $order_currency,
