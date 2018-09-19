@@ -6,7 +6,7 @@
  * Author: ReferralCandy
  * Author URI: http://www.referralcandy.com
  * Text Domain: woocommerce-referralcandy
- * Version: 1.3.7
+ * Version: 1.4.0
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,9 +35,8 @@ if (preg_grep("/\/woocommerce.php$/", apply_filters('active_plugins', get_option
 
             public function init() {
                 if (class_exists('WC_Integration')) {
-                    include_once 'includes/class-wc-referralcandy-integration.php';
-
-                    add_filter('woocommerce_integrations', array($this, 'add_integration'));
+                    add_action('woocommerce_integrations', 'autoload_classes');
+                    add_filter('woocommerce_integrations', [$this, 'add_integration']);
                 } else {
                     add_action('admin_notices', 'missing_prerequisite_notification');
                 }
@@ -53,6 +52,16 @@ if (preg_grep("/\/woocommerce.php$/", apply_filters('active_plugins', get_option
         }
 
         $WC_Referralcandy = new WC_Referralcandy(__FILE__);
+    }
+
+    function autoload_classes() {
+        $files = scandir(dirname(__FILE__) . '/includes');
+        $valid_extensions = ['php'];
+        foreach ($files as $index => $file) {
+            if (in_array(pathinfo($file)['extension'], $valid_extensions)) {
+                require_once('includes/' . pathinfo($file)['basename']);
+            }
+        }
     }
 
     function wc_referralcandy_plugin_activate() {

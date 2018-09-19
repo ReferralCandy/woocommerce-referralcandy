@@ -22,15 +22,20 @@ if (!class_exists('WC_Referralcandy_Integration')) {
 
             // Load the settings.
             $this->init_form_fields();
-            $this->init_settings();
 
             // Define user set variables.
+            $this->api_id              = $this->get_option('api_id');
             $this->app_id              = $this->get_option('app_id');
             $this->secret_key          = $this->get_option('secret_key');
 
             // Actions.
-            add_action('woocommerce_update_options_integration_' . $this->id, array($this, 'process_admin_options'));
-            add_action('woocommerce_thankyou', array($this, 'woocommerce_order_referralcandy'));
+            add_action('woocommerce_update_options_integration_' . $this->id,   [$this, 'process_admin_options']);
+            add_action('init',                                                  [$this, 'rc_set_referrer_cookie']);
+            add_action('save_post',                                             [$this, 'add_referralcandy_data']);
+            add_action('woocommerce_thankyou',                                  [$this, 'render_post_purchase_popup']);
+            add_action('woocommerce_order_status_completed',                    [$this, 'rc_submit_purchase'], 10, 1);
+            add_action('woocommerce_order_status_cancelled',                    [$this, 'rc_process_return'], 10, 1);
+            add_action('woocommerce_order_refunded',                            [$this, 'rc_process_return'], 10, 1);
 
             // Filters.
             add_filter('woocommerce_settings_api_sanitized_fields_' . $this->id, array($this, 'sanitize_settings'));
@@ -38,16 +43,25 @@ if (!class_exists('WC_Referralcandy_Integration')) {
 
         public function init_form_fields() {
             $this->form_fields = [
+                'api_id' => [
+                    'title'             => __('API Access ID', 'woocommerce-referralcandy'),
+                    'type'              => 'text',
+                    'desc'              => __('You can find your API Access ID on https://my.referralcandy.com/settings'),
+                    'desc_tip'          => true,
+                    'default'           => ''
+                ],
                 'app_id' => [
                     'title'             => __('App ID', 'woocommerce-referralcandy'),
                     'type'              => 'text',
-                    'desc_tip'          => false,
+                    'desc'              => __('You can find your App ID on https://my.referralcandy.com/settings'),
+                    'desc_tip'          => true,
                     'default'           => ''
                 ],
                 'secret_key' => [
                     'title'             => __('Secret key', 'woocommerce-referralcandy'),
                     'type'              => 'text',
-                    'desc_tip'          => false,
+                    'desc'              => __('You can find your API Secrey Key on https://my.referralcandy.com/settings'),
+                    'desc_tip'          => true,
                     'default'           => ''
                 ],
                 'popup' => [
@@ -73,67 +87,73 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             return $settings;
         }
 
-        public function is_option_enabled($option_name) {
+        private function is_option_enabled($option_name) {
             return $this->get_option($option_name) == 'yes'? true : false;
         }
 
-        public function woocommerce_order_referralcandy($order_id) {
-            $wc_pre_30 = version_compare( WC_VERSION, '3.0.0', '<');
+        public function add_referralcandy_data($post_id) {
+            try {
+                if (get_post($post_id)->post_type == 'shop_order') {
+                    $wc_order = new WC_Order($post_id);
 
-            $order = new WC_Order($order_id);
+                    // save meta datas for later use
+                    $wc_order->update_meta_data('api_id',       $this->api_id);
+                    $wc_order->update_meta_data('secret_key',   $this->secret_key);
+                    $wc_order->update_meta_data('browser_ip',   $_SERVER['REMOTE_ADDR']);
+                    $wc_order->update_meta_data('user_agent',   $_SERVER['HTTP_USER_AGENT']);
 
-            // https://en.support.wordpress.com/settings/general-settings/2/#timezone
-            // This option is set when a timezone name is selected
-            $timezone_string = get_option('timezone_string');
+                    // prevent admin cookies from automatically adding a referrer_id; this can be done manually though
+                    if (is_admin() == false) {
+                        $wc_order->update_meta_data('referrer_id',  $_COOKIE['rc_referrer_id']);
+                    }
 
-            if (!empty($timezone_string)) {
-                $timestamp = DateTime::createFromFormat('Y-m-d H:i:s', $order->order_date, new DateTimeZone($timezone_string))->getTimestamp();
-            } else {
-                $timestamp = time();
+                    $wc_order->save();
+                }
+            } catch(Exception $e) {
+
             }
+        }
 
-            $billing_first_name = $wc_pre_30? $order->billing_first_name : $order->get_billing_first_name();
-            $billing_last_name  = $wc_pre_30? $order->billing_last_name : $order->get_billing_last_name();
-            $billing_email      = $wc_pre_30? $order->billing_email : $order->get_billing_email();
-            $encoded_email      = urlencode($billing_email);
-            $order_total        = $order->get_total();
-            $order_currency     = $wc_pre_30? $order->get_order_currency() : $order->get_currency();
-            $order_number       = $order->get_order_number();
+        public function rc_submit_purchase($order_id) {
+            $rc_order = new RC_Order($order_id);
+            $rc_order->submit_purchase();
+        }
 
-            // make sure first name is always populated to avoid checksum errors
-            if (empty(strip_tags($billing_first_name)) === true) { // if first name is empty
-                // extract name from email (i.e. john from john+doe@domain.com or john_doe from john_doe@domain.com)
-                preg_match('/(?<extracted_name>\w+)/', $billing_email, $matches);
-                $billing_first_name = $matches['extracted_name']; // assign extracted name as first name
-            }
+        public function rc_process_return($order_id) {
+            $rc_order = new RC_Order($order_id);
+            $rc_order->process_return();
+        }
 
-            $divData = [
-                'id'                => $this->is_option_enabled('popup')? 'refcandy-popsicle' : 'refcandy-mint',
-                'data-app-id'       => $this->get_option('app_id'),
-                'data-fname'        => $billing_first_name,
-                'data-lname'        => $billing_last_name,
-                'data-email'        => $this->is_option_enabled('popup')? $billing_email : $encoded_email,
-                'data-amount'       => $order_total,
-                'data-currency'     => $order_currency,
-                'data-timestamp'    => $timestamp,
-                'data-external-reference-id' => $order_number,
-                'data-signature'    => md5($billing_email.','.$billing_first_name.','.$order_total.','.$timestamp.','.$this->get_option('secret_key'))
-            ];
+        public function render_post_purchase_popup($order_id) {
+            $rc_order = new RC_Order($order_id);
 
-            $popsicle_script = '<script>(function(e){var t,n,r,i,s,o,u,a,f,l,c,h,p,d,v;z="script";l="refcandy-purchase-js";c="refcandy-popsicle";p="go.referralcandy.com/purchase/";t="data-app-id";r={email:"a",fname:"b",lname:"c",amount:"d",currency:"e","accepts-marketing":"f",timestamp:"g","referral-code":"h",locale:"i","external-reference-id":"k",signature:"ab"};i=e.getElementsByTagName(z)[0];s=function(e,t){if(t){return""+e+"="+encodeURIComponent(t)}else{return""}};d=function(e){return""+p+h.getAttribute(t)+".js?lightbox=1&aa=75&"};if(!e.getElementById(l)){h=e.getElementById(c);if(h){o=e.createElement(z);o.id=l;a=function(){var e;e=[];for(n in r){u=r[n];v=h.getAttribute("data-"+n);e.push(s(u,v))}return e}();o.src="//"+d(h.getAttribute(t))+a.join("&");return i.parentNode.insertBefore(o,i)}}})(document);</script>';
+            $div = "<div
+                      id='refcandy-lollipop'
+                      data-id='$rc_order->api_id'
+                      data-fname='$rc_order->first_name'
+                      data-lname='$rc_order->last_name'
+                      data-email='$rc_order->email'
+                      data-accepts-marketing='true'
+                    ></div>";
 
-            $mint_script = '<script>(function(e){var t,n,r,i,s,o,u,a,f,l,c,h,p,d,v;z="script";l="refcandy-purchase-js";c="refcandy-mint";p="go.referralcandy.com/purchase/";t="data-app-id";r={email:"a",fname:"b",lname:"c",amount:"d",currency:"e","accepts-marketing":"f",timestamp:"g","referral-code":"h",locale:"i","external-reference-id":"k",signature:"ab"};i=e.getElementsByTagName(z)[0];s=function(e,t){if(t){return""+e+"="+t}else{return""}};d=function(e){return""+p+h.getAttribute(t)+".js?aa=75&"};if(!e.getElementById(l)){h=e.getElementById(c);if(h){o=e.createElement(z);o.id=l;a=function(){var e;e=[];for(n in r){u=r[n];v=h.getAttribute("data-"+n);e.push(s(u,v))}return e}();o.src=""+e.location.protocol+"//"+d(h.getAttribute(t))+a.join("&");return i.parentNode.insertBefore(o,i)}}})(document);</script>';
+            $popup_script = '<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.defer=true;js.src="//portal.referralcandy.com/assets/widgets/refcandy-lollipop.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","refcandy-lollipop-js");</script>';
 
             $quickfix = '';
             if ($this->is_option_enabled('popup') && $this->is_option_enabled('popup_quickfix')) {
                 $quickfix = '<style>html { position: relative !important; }</style>';
             }
 
-            $div = '<div '.implode(' ', array_map(function ($v, $k) { return $k . '="'.addslashes($v).'"'; }, $divData, array_keys($divData))).'></div>';
+            if ($this->is_option_enabled('popup') == true) {
+                echo $div.$popup_script.$quickfix;
+            }
+        }
 
-            $script = $this->is_option_enabled('popup')? $popsicle_script : $mint_script;
+        public function rc_set_referrer_cookie() {
+            $days_to_keep_cookies = 28;
 
-            echo $div.$script.$quickfix;
+            if (isset($_GET['aic']) && $_GET['aic'] !== null) {
+                setcookie('rc_referrer_id', $_GET['aic'], time() + (86400 * $days_to_keep_cookies), "/");
+            }
         }
     }
 }
