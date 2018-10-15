@@ -73,7 +73,6 @@ We maintain a list of FAQs on our [help page](http://help.referralcandy.com/)!
 = 2.0.0 =
 * Plugin now uses the API integration of ReferralCandy
 * Orders created from the Woocommerce dashboard are now registered in the ReferralCandy dashboard
-* Referrals for cancelled / refunded orders are now removed as well from the ReferralCandy dashboard
 
 = 1.3.7 =
 * Fixed issue where orders with spaces in the names or have no name at all produce checksum errors

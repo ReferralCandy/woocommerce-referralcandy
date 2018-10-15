@@ -141,26 +141,4 @@ class RC_Order {
             );
         }
     }
-
-    // https://www.referralcandy.com/api#referral
-    public function process_return() {
-        $endpoint = 'https://my.referralcandy.com/api/v1/referral.json';
-
-        if (!empty($this->secret_key) && !empty($this->api_id)) {
-            $specific_keys = [
-                'accessID',
-                'timestamp',
-            ];
-
-            $additional_keys = [
-                'customer_email'    => $this->email,
-                'returned'          => 'true',
-            ];
-
-            $response = wp_safe_remote_post(
-                $endpoint,
-                $this->generate_request_body($this->generate_post_fields($specific_keys, $additional_keys))
-            );
-        }
-    }
 }

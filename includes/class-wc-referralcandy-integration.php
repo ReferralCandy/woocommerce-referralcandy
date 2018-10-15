@@ -34,8 +34,6 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             add_action('save_post',                                             [$this, 'add_referralcandy_data']);
             add_action('woocommerce_thankyou',                                  [$this, 'render_post_purchase_popup']);
             add_action('woocommerce_order_status_completed',                    [$this, 'rc_submit_purchase'], 10, 1);
-            add_action('woocommerce_order_status_cancelled',                    [$this, 'rc_process_return'], 10, 1);
-            add_action('woocommerce_order_refunded',                            [$this, 'rc_process_return'], 10, 1);
 
             // Filters.
             add_filter('woocommerce_settings_api_sanitized_fields_' . $this->id, array($this, 'sanitize_settings'));
@@ -117,11 +115,6 @@ if (!class_exists('WC_Referralcandy_Integration')) {
         public function rc_submit_purchase($order_id) {
             $rc_order = new RC_Order($order_id);
             $rc_order->submit_purchase();
-        }
-
-        public function rc_process_return($order_id) {
-            $rc_order = new RC_Order($order_id);
-            $rc_order->process_return();
         }
 
         public function render_post_purchase_popup($order_id) {
