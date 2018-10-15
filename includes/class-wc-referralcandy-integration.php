@@ -58,7 +58,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 'secret_key' => [
                     'title'             => __('Secret key', 'woocommerce-referralcandy'),
                     'type'              => 'text',
-                    'desc'              => __('You can find your API Secrey Key on https://my.referralcandy.com/settings'),
+                    'desc'              => __('You can find your API Secret Key on https://my.referralcandy.com/settings'),
                     'desc_tip'          => true,
                     'default'           => ''
                 ],
