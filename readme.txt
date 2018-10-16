@@ -3,7 +3,7 @@
 Contributors: referralcandy
 Tags: referral program, customer referral program, refer-a-friend, tell-a-friend, marketing, customer acquisition, word-of-mouth, marketing app, viral marketing, social marketing, marketing, woocommerce
 Requires at least: 3.0
-Tested up to: 4.7.3
+Tested up to: 4.9.8
 Stable tag: trunk
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -59,6 +59,8 @@ Learn about the details on our [How ReferralCandy Works](http://www.referralcand
 2. Fill-out your App ID and Secret Key. You can get them from [ReferralCandy Admin Settings > Plugin tokens](https://my.referralcandy.com/settings))
 3. Click on **Save changes** and it's done!
 
+**Please make sure that the plugin can make outbound requests for the API calls
+
 
 == Frequently Asked Questions ==
 
@@ -72,6 +74,7 @@ We maintain a list of FAQs on our [help page](http://help.referralcandy.com/)!
 
 = 2.0.0 =
 * Plugin now uses the API integration of ReferralCandy
+* Only orders marked as completed are submitted to ReferralCandy
 * Orders created from the Woocommerce dashboard are now registered in the ReferralCandy dashboard
 
 = 1.3.7 =
