@@ -6,7 +6,7 @@
  * Author: ReferralCandy
  * Author URI: http://www.referralcandy.com
  * Text Domain: woocommerce-referralcandy
- * Version: 2.0.0
+ * Version: 2.0.1
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ if (preg_grep("/\/woocommerce.php$/", apply_filters('active_plugins', get_option
 
             public function init() {
                 if (class_exists('WC_Integration')) {
-                    add_action('woocommerce_integrations', 'autoload_classes');
+                    autoload_classes();
                     add_filter('woocommerce_integrations', [$this, 'add_integration']);
                 } else {
                     add_action('admin_notices', 'missing_prerequisite_notification');

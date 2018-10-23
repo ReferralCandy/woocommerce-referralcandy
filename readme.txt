@@ -72,6 +72,9 @@ We maintain a list of FAQs on our [help page](http://help.referralcandy.com/)!
 
 == Changelog ==
 
+= 2.0.1 =
+* Fixed bug where the plugin breaks the Woocommerce Integration tab
+
 = 2.0.0 =
 * Plugin now uses the API integration of ReferralCandy
 * Only orders marked as completed are submitted to ReferralCandy
