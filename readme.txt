@@ -72,6 +72,10 @@ We maintain a list of FAQs on our [help page](http://help.referralcandy.com/)!
 
 == Changelog ==
 
+= 2.0.2 =
+* Added link to Settings on the plugin page for easier access
+* Added warnings for required keys that are not present
+
 = 2.0.1 =
 * Fixed bug where the plugin breaks the Woocommerce Integration tab
 
