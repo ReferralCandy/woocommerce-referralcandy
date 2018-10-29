@@ -30,13 +30,14 @@ if (!class_exists('WC_Referralcandy_Integration')) {
 
             // Actions.
             add_action('woocommerce_update_options_integration_' . $this->id,   [$this, 'process_admin_options']);
+            add_action('admin_notices',                                         [$this, 'check_plugin_keys']);
             add_action('init',                                                  [$this, 'rc_set_referrer_cookie']);
             add_action('save_post',                                             [$this, 'add_referralcandy_data']);
             add_action('woocommerce_thankyou',                                  [$this, 'render_post_purchase_popup']);
             add_action('woocommerce_order_status_completed',                    [$this, 'rc_submit_purchase'], 10, 1);
 
             // Filters.
-            add_filter('woocommerce_settings_api_sanitized_fields_' . $this->id, array($this, 'sanitize_settings'));
+            add_filter('woocommerce_settings_api_sanitized_fields_' . $this->id, [$this, 'sanitize_settings']);
         }
 
         public function init_form_fields() {
@@ -89,12 +90,35 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             return $this->get_option($option_name) == 'yes'? true : false;
         }
 
+        public function check_plugin_keys() {
+            $message = "<strong>ReferralCandy</strong>: Please make sure the following keys are present for your integration to work properly:";
+
+            $empty_keys = false;
+            $keys_to_check = [
+                'API Access ID' => $this->api_id,
+                'App ID'        => $this->app_id,
+                'Secret Key'    => $this->secret_key
+            ];
+
+            foreach($keys_to_check as $key => $value) {
+                if (empty($value)) {
+                    $empty_keys = true;
+                    $message .= "<br> - $key";
+                }
+            }
+
+            if ($empty_keys == true) {
+                printf('<div class="notice notice-warning"><p>%1$s</p></div>', $message);
+            }
+        }
+
         public function add_referralcandy_data($post_id) {
             try {
                 if (get_post($post_id)->post_type == 'shop_order') {
                     $wc_order = new WC_Order($post_id);
 
                     // save meta datas for later use
+                    $wc_order->update_meta_data('app_id',       $this->app_id);
                     $wc_order->update_meta_data('api_id',       $this->api_id);
                     $wc_order->update_meta_data('secret_key',   $this->secret_key);
                     $wc_order->update_meta_data('browser_ip',   $_SERVER['REMOTE_ADDR']);
@@ -126,7 +150,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                       data-fname='$rc_order->first_name'
                       data-lname='$rc_order->last_name'
                       data-email='$rc_order->email'
-                      data-accepts-marketing='false'
+                      data-accepts-marketing='true'
                     ></div>";
 
             $popup_script = '<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.defer=true;js.src="//portal.referralcandy.com/assets/widgets/refcandy-lollipop.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","refcandy-lollipop-js");</script>';
