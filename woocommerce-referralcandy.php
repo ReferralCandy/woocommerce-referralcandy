@@ -6,7 +6,7 @@
  * Author: ReferralCandy
  * Author URI: http://www.referralcandy.com
  * Text Domain: woocommerce-referralcandy
- * Version: 2.0.1
+ * Version: 2.0.2
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -86,6 +86,16 @@ if (preg_grep("/\/woocommerce.php$/", apply_filters('active_plugins', get_option
         printf('<div class="notice notice-error"><p>%1$s</p></div>', $message);
     }
 
+    function rc_plugin_links($links) {
+        $rc_tab_url = "admin.php?page=wc-settings&tab=integration&section=referralcandy";
+        $settings_link = "<a href='". esc_url( get_admin_url(null, $rc_tab_url) ) ."'>Settings</a>";
+
+        array_unshift($links, $settings_link);
+
+        return $links;
+    }
+
     register_activation_hook(__FILE__, 'wc_referralcandy_plugin_activate');
     add_action('admin_init', 'wc_referralcandy_plugin_redirect');
+    add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'rc_plugin_links');
 }
