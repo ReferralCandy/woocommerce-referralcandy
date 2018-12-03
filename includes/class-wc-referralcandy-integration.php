@@ -92,7 +92,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
 
         public function check_plugin_keys() {
             $message = "<strong>ReferralCandy</strong>: Please make sure the following keys are present for your integration to work properly:";
-            $empty_keys = false;
+            $missing_keys = false;
             $keys_to_check = [
                 'API Access ID' => $this->api_id,
                 'App ID'        => $this->app_id,
@@ -100,11 +100,11 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             ];
             foreach($keys_to_check as $key => $value) {
                 if (empty($value)) {
-                    $empty_keys = true;
+                    $missing_keys = true;
                     $message .= "<br> - $key";
                 }
             }
-            if ($empty_keys == true) {
+            if ($missing_keys == true) {
                 printf('<div class="notice notice-warning"><p>%s</p></div>', $message);
             }
         }
