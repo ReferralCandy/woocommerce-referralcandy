@@ -72,7 +72,10 @@ We maintain a list of FAQs on our [help page](http://help.referralcandy.com/)!
 
 == Changelog ==
 
-= 2.1.0
+= 2.1.1 =
+* Defaulted post-purchase popup's accepts marketing field to 'false'
+
+= 2.1.0 =
 * Fixed bug where the orders for subscriptions are being marked as completed (i.e. ShipStation, WooCommerce Subscriptions)
 
 = 2.0.2 =
