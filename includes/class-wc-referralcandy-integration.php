@@ -105,7 +105,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 }
             }
             if ($empty_keys == true) {
-                printf('<div class="notice notice-warning"><p>%1$s</p></div>', $message);
+                printf('<div class="notice notice-warning"><p>%s</p></div>', $message);
             }
         }
 
