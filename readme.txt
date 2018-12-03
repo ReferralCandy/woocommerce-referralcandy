@@ -72,6 +72,9 @@ We maintain a list of FAQs on our [help page](http://help.referralcandy.com/)!
 
 == Changelog ==
 
+= 2.1.0
+* Fixed bug where the orders for subscriptions are being marked as completed (i.e. ShipStation, WooCommerce Subscriptions)
+
 = 2.0.2 =
 * Added link to Settings on the plugin page for easier access
 * Added warnings for required keys that are not present
