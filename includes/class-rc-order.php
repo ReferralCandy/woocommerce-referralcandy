@@ -8,6 +8,7 @@
  */
 
 class RC_Order {
+    public $base_url = 'https://my.referralcandy.com/api/v1';
     public $wc_pre_30 = false;
     public $api_id;
     public $secret_key;
@@ -132,12 +133,17 @@ class RC_Order {
 
     // https://www.referralcandy.com/api#purchase
     public function submit_purchase() {
-        $endpoint = 'https://my.referralcandy.com/api/v1/purchase.json';
+        $endpoint = join('/', [$this->base_url, 'purchase.json']);
 
         if (!empty($this->secret_key) && !empty($this->api_id)) {
-            $response = wp_safe_remote_post(
-                $endpoint,
-                $this->generate_request_body($this->generate_post_fields())
+            $params     = $this->generate_request_body($this->generate_post_fields());
+            $response   = wp_safe_remote_post($endpoint, $params);
+
+            error_log(
+                '** API request to: '. $endpoint .' START **
+                Request Params: {'. implode(',', $params['body']) .'}
+                Request Reponse: '. $response['body'] .'
+                ** END **'
             );
         }
     }

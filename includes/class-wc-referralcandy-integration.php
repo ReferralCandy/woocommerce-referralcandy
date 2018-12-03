@@ -92,21 +92,18 @@ if (!class_exists('WC_Referralcandy_Integration')) {
 
         public function check_plugin_keys() {
             $message = "<strong>ReferralCandy</strong>: Please make sure the following keys are present for your integration to work properly:";
-
             $empty_keys = false;
             $keys_to_check = [
                 'API Access ID' => $this->api_id,
                 'App ID'        => $this->app_id,
                 'Secret Key'    => $this->secret_key
             ];
-
             foreach($keys_to_check as $key => $value) {
                 if (empty($value)) {
                     $empty_keys = true;
                     $message .= "<br> - $key";
                 }
             }
-
             if ($empty_keys == true) {
                 printf('<div class="notice notice-warning"><p>%1$s</p></div>', $message);
             }
@@ -114,25 +111,20 @@ if (!class_exists('WC_Referralcandy_Integration')) {
 
         public function add_referralcandy_data($post_id) {
             try {
-                if (get_post($post_id)->post_type == 'shop_order') {
-                    $wc_order = new WC_Order($post_id);
-
+                if (in_array(get_post($post_id)->post_type, ['shop_order', 'shop_subscription'])) {
                     // save meta datas for later use
-                    $wc_order->update_meta_data('app_id',       $this->app_id);
-                    $wc_order->update_meta_data('api_id',       $this->api_id);
-                    $wc_order->update_meta_data('secret_key',   $this->secret_key);
-                    $wc_order->update_meta_data('browser_ip',   $_SERVER['REMOTE_ADDR']);
-                    $wc_order->update_meta_data('user_agent',   $_SERVER['HTTP_USER_AGENT']);
+                    update_post_meta($post_id, 'api_id',       $this->api_id);
+                    update_post_meta($post_id, 'secret_key',   $this->secret_key);
+                    update_post_meta($post_id, 'browser_ip',   $_SERVER['REMOTE_ADDR']);
+                    update_post_meta($post_id, 'user_agent',   $_SERVER['HTTP_USER_AGENT']);
 
                     // prevent admin cookies from automatically adding a referrer_id; this can be done manually though
                     if (is_admin() == false) {
-                        $wc_order->update_meta_data('referrer_id',  $_COOKIE['rc_referrer_id']);
+                        update_post_meta($post_id, 'referrer_id',  $_COOKIE['rc_referrer_id']);
                     }
-
-                    $wc_order->save();
                 }
             } catch(Exception $e) {
-
+                error_log($e);
             }
         }
 
