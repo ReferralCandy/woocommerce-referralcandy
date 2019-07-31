@@ -161,7 +161,8 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             $days_to_keep_cookies = 28;
 
             if (isset($_GET['aic']) && $_GET['aic'] !== null) {
-                setcookie('rc_referrer_id', $_GET['aic'], time() + (86400 * $days_to_keep_cookies), "/");
+                $cookie_domain = preg_replace('/(http||https):\/\/(www\.)?/', '.', get_bloginfo('url'));
+                setcookie('rc_referrer_id', $_GET['aic'], time() + (86400 * $days_to_keep_cookies), '/', $cookie_domain);
             }
         }
     }
