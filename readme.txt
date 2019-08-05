@@ -72,6 +72,9 @@ We maintain a list of FAQs on our [help page](http://help.referralcandy.com/)!
 
 == Changelog ==
 
+= 2.1.2 =
+* Updated logic for setting cookies to improve referral detection
+
 = 2.1.1 =
 * Defaulted post-purchase popup's accepts marketing field to 'false'
 
