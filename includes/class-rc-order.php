@@ -139,12 +139,12 @@ class RC_Order {
             $params     = $this->generate_request_body($this->generate_post_fields());
             $response   = wp_safe_remote_post($endpoint, $params);
 
-            error_log(
-                '** API request to: '. $endpoint .' START **
-                Request Params: {'. implode(',', $params['body']) .'}
-                Request Reponse: '. $response['body'] .'
-                ** END **'
-            );
+            $request_details = [
+                'parameters' => $params,
+                'response' => $response
+            ];
+
+            error_log('=> Submitting purchase to ReferralCandy: ' . json_encode($request_details));
         }
     }
 }

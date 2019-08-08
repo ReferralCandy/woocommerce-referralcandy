@@ -72,6 +72,9 @@ We maintain a list of FAQs on our [help page](http://help.referralcandy.com/)!
 
 == Changelog ==
 
+= 2.1.3 =
+* Updated logging function which might break on some WordPress versions
+
 = 2.1.2 =
 * Updated logic for setting cookies to improve referral detection
 
