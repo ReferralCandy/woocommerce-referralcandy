@@ -4,7 +4,7 @@ This plugin automatically integrates your WooCommerce store with ReferralCandy a
 
 ![ReferralCandy for WooCommerce Plugin Settings Page](assets/screenshot-1.png)
 
-# Installation 
+# Installation
 
 ## From your WordPress dashboard
 
@@ -22,5 +22,9 @@ This plugin automatically integrates your WooCommerce store with ReferralCandy a
 ## Configure
 
 1. Go to **WooCommerce > Settings > Integration > ReferralCandy**
-2. Fill-out your App ID and Secret Key. You can get them from [ReferralCandy Admin Settings > Plugin tokens](https://my.referralcandy.com/settings))
-3. Click on **Save changes** and it's done!
+2. Fill-out your API Access ID, App ID, and Secret Key. You can get them from [ReferralCandy Admin Settings > Plugin tokens](https://my.referralcandy.com/settings))
+3. Select which order status will be sent to ReferralCandy. Default is orders that are marked as `completed`.
+4. Select which page the tracking code should be rendered for referral detection. Default is WooCommerce checkout page
+5. Click on **Save changes**
+6. Create a test order via admin / checkout flow, then update the status to the one selected at step 3
+7. Activate your ReferralCandy campaign!
