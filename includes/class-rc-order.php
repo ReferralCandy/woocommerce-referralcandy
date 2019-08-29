@@ -24,7 +24,7 @@ class RC_Order {
     public $user_agent;
     public $referrer_id;
 
-    public function __construct($wc_order_id) {
+    public function __construct($wc_order_id, WC_Referralcandy_Integration $integration) {
         $wc_order   = new WC_Order($wc_order_id);
         $order_data = $wc_order->get_data();
 
@@ -36,32 +36,11 @@ class RC_Order {
         $this->currency         = $order_data['currency'];
         $this->order_number     = $order_data['id'];
         $this->order_timestamp  = $order_data['date_created']->getTimestamp();
-
-        foreach($wc_order->get_meta_data() as $i => $meta_data) {
-            $data = $meta_data->get_data();
-
-            switch($data['key']) {
-                case 'api_id':
-                    $this->api_id = $data['value'];
-                    break;
-
-                case 'secret_key':
-                    $this->secret_key = $data['value'];
-                    break;
-
-                case 'browser_ip':
-                    $this->browser_ip = $data['value'];
-                    break;
-
-                case 'user_agent':
-                    $this->user_agent = $data['value'];
-                    break;
-
-                case 'referrer_id':
-                    $this->referrer_id = $data['value'];
-                    break;
-            }
-        }
+        $this->browser_ip       = $order_data['customer_ip_address'];
+        $this->user_agent       = $order_data['customer_user_agent'];
+        $this->api_id           = $integration->api_id;
+        $this->secret_key       = $integration->secret_key;
+        $this->referrer_id      = $wc_order->get_meta('rc_referrer_id', true, 'view');
     }
 
     private function generate_post_fields($specific_keys = [], $additional_keys = []) {

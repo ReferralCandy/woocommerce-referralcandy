@@ -34,7 +34,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             add_action('woocommerce_update_options_integration_' . $this->id,   [$this, 'process_admin_options']);
             add_action('admin_notices',                                         [$this, 'check_plugin_keys']);
             add_action('init',                                                  [$this, 'rc_set_referrer_cookie']);
-            add_action('save_post',                                             [$this, 'add_referralcandy_data']);
+            add_action('save_post',                                             [$this, 'add_referrer_id']);
             add_action('template_redirect',                                     [$this, 'render_tracking_code']);
             add_action('woocommerce_thankyou',                                  [$this, 'render_post_purchase_popup']);
             add_action('woocommerce_order_status_' . $this->status_to,          [$this, 'rc_submit_purchase'], 10, 1);
@@ -140,15 +140,9 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             }
         }
 
-        public function add_referralcandy_data($post_id) {
+        public function add_referrer_id($post_id) {
             try {
                 if (in_array(get_post($post_id)->post_type, ['shop_order', 'shop_subscription'])) {
-                    // save meta datas for later use
-                    update_post_meta($post_id, 'api_id',       $this->api_id);
-                    update_post_meta($post_id, 'secret_key',   $this->secret_key);
-                    update_post_meta($post_id, 'browser_ip',   $_SERVER['REMOTE_ADDR']);
-                    update_post_meta($post_id, 'user_agent',   $_SERVER['HTTP_USER_AGENT']);
-
                     // prevent admin cookies from automatically adding a referrer_id; this can be done manually though
                     if (is_admin() == false) {
                         update_post_meta($post_id, 'referrer_id',  $_COOKIE['rc_referrer_id']);
@@ -160,7 +154,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
         }
 
         public function rc_submit_purchase($order_id) {
-            $rc_order = new RC_Order($order_id);
+            $rc_order = new RC_Order($order_id, $this);
             $rc_order->submit_purchase();
         }
 
@@ -173,7 +167,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
 
         public function render_post_purchase_popup($order_id) {
             if (isset($order_id)) {
-                $rc_order = new RC_Order($order_id);
+                $rc_order = new RC_Order($order_id, $this);
                 $order = new WC_Order($order_id);
 
                 $div = "<div
