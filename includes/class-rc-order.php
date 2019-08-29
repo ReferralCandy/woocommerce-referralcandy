@@ -25,22 +25,42 @@ class RC_Order {
     public $referrer_id;
 
     public function __construct($wc_order_id, WC_Referralcandy_Integration $integration) {
+        $this->wc_pre_30 = version_compare(WC_VERSION, '3.0.0', '<');
         $wc_order   = new WC_Order($wc_order_id);
-        $order_data = $wc_order->get_data();
 
-        $this->wc_pre_30        = version_compare(WC_VERSION, '3.0.0', '<');
-        $this->first_name       = $order_data['billing']['first_name'];
-        $this->last_name        = $order_data['billing']['last_name'];
-        $this->email            = $order_data['billing']['email'];
-        $this->total            = $order_data['total'];
-        $this->currency         = $order_data['currency'];
-        $this->order_number     = $order_data['id'];
-        $this->order_timestamp  = $order_data['date_created']->getTimestamp();
-        $this->browser_ip       = $order_data['customer_ip_address'];
-        $this->user_agent       = $order_data['customer_user_agent'];
+        if ($this->wc_pre_30) {
+            $this->order_timestamp = time();
+            if (get_option('timezone_string') != null) {
+                $timezone_string = get_option('timezone_string');
+                $this->order_timestamp = DateTime::createFromFormat('Y-m-d H:i:s', $wc_order->order_date, new DateTimeZone($timezone_string))->getTimestamp();
+            }
+
+            $this->first_name       = $wc_order->billing_first_name;
+            $this->last_name        = $wc_order->billing_last_name;
+            $this->email            = $wc_order->billing_email;
+            $this->total            = $wc_order->get_total();
+            $this->currency         = $wc_order->get_order_currency();
+            $this->order_number     = $wc_order_id;
+            $this->browser_ip       = $wc_order->customer_ip_address;
+            $this->user_agent       = $wc_order->customer_user_agent;
+            $this->referrer_id      = get_post_meta($wc_order_id, 'rc_referrer_id', true);
+        } else {
+            $order_data = $wc_order->get_data();
+
+            $this->first_name       = $order_data['billing']['first_name'];
+            $this->last_name        = $order_data['billing']['last_name'];
+            $this->email            = $order_data['billing']['email'];
+            $this->total            = $order_data['total'];
+            $this->currency         = $order_data['currency'];
+            $this->order_number     = $wc_order_id;
+            $this->order_timestamp  = $order_data['date_created']->getTimestamp();
+            $this->browser_ip       = $order_data['customer_ip_address'];
+            $this->user_agent       = $order_data['customer_user_agent'];
+            $this->referrer_id      = $wc_order->get_meta('rc_referrer_id', true, 'view');
+        }
+
         $this->api_id           = $integration->api_id;
         $this->secret_key       = $integration->secret_key;
-        $this->referrer_id      = $wc_order->get_meta('rc_referrer_id', true, 'view');
     }
 
     private function generate_post_fields($specific_keys = [], $additional_keys = []) {

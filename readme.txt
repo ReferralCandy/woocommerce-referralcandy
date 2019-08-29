@@ -78,6 +78,7 @@ We maintain a list of FAQs on our [help page](http://help.referralcandy.com/)!
 * Added option to render tracking code on a different page if the thank you page was changed
 * Updated method of fetching order information
 * Removed saving of metadata except for `rc_referrer_id`
+* Improved compatibility with WooCommerce v2.6 and above
 
 = 2.1.2 =
 * Updated logic for setting cookies to improve referral detection

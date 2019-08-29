@@ -32,7 +32,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
 
             // Actions.
             add_action('woocommerce_update_options_integration_' . $this->id,   [$this, 'process_admin_options']);
-            add_action('admin_notices',                                         [$this, 'check_plugin_keys']);
+            add_action('admin_notices',                                         [$this, 'check_plugin_requirements']);
             add_action('init',                                                  [$this, 'rc_set_referrer_cookie']);
             add_action('save_post',                                             [$this, 'add_referrer_id']);
             add_action('template_redirect',                                     [$this, 'render_tracking_code']);
@@ -121,20 +121,26 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             return $this->get_option($option_name) == 'yes'? true : false;
         }
 
-        public function check_plugin_keys() {
-            $message = "<strong>ReferralCandy</strong>: Please make sure the following keys are present for your integration to work properly:";
+        public function check_plugin_requirements() {
+            $message = "<strong>ReferralCandy</strong>: Please make sure the following settings are configured for your integration to work properly:";
             $missing_keys = false;
             $keys_to_check = [
                 'API Access ID' => $this->api_id,
                 'App ID'        => $this->app_id,
                 'Secret Key'    => $this->secret_key
             ];
+
             foreach($keys_to_check as $key => $value) {
                 if (empty($value)) {
                     $missing_keys = true;
                     $message .= "<br> - $key";
                 }
             }
+
+            if (get_option('timezone_string') == null) {
+                $message .= "<br> - Store TimeZone (i.e. Asia/Singapore)";
+            }
+
             if ($missing_keys == true) {
                 printf('<div class="notice notice-warning"><p>%s</p></div>', $message);
             }
@@ -145,7 +151,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 if (in_array(get_post($post_id)->post_type, ['shop_order', 'shop_subscription'])) {
                     // prevent admin cookies from automatically adding a referrer_id; this can be done manually though
                     if (is_admin() == false) {
-                        update_post_meta($post_id, 'referrer_id',  $_COOKIE['rc_referrer_id']);
+                        update_post_meta($post_id, 'rc_referrer_id',  $_COOKIE['rc_referrer_id']);
                     }
                 }
             } catch(Exception $e) {
