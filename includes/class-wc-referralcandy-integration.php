@@ -123,7 +123,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
 
         public function check_plugin_requirements() {
             $message = "<strong>ReferralCandy</strong>: Please make sure the following settings are configured for your integration to work properly:";
-            $missing_keys = false;
+            $integration_incomplete = false;
             $keys_to_check = [
                 'API Access ID' => $this->api_id,
                 'App ID'        => $this->app_id,
@@ -132,16 +132,17 @@ if (!class_exists('WC_Referralcandy_Integration')) {
 
             foreach($keys_to_check as $key => $value) {
                 if (empty($value)) {
-                    $missing_keys = true;
+                    $integration_incomplete = true;
                     $message .= "<br> - $key";
                 }
             }
 
             if (get_option('timezone_string') == null) {
+                $integration_incomplete = true;
                 $message .= "<br> - Store TimeZone (i.e. Asia/Singapore)";
             }
 
-            if ($missing_keys == true) {
+            if ($integration_incomplete == true) {
                 printf('<div class="notice notice-warning"><p>%s</p></div>', $message);
             }
         }
