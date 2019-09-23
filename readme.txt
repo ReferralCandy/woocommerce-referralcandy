@@ -72,6 +72,9 @@ We maintain a list of FAQs on our [help page](http://help.referralcandy.com/)!
 
 == Changelog ==
 
+= 2.2.1 =
+* Fix for non-English stores not submitting purchases to ReferralCandy
+
 = 2.2.0 =
 * Reinstated tracking code rendering as backup referral detection if setting referrer cookies fail
 * Added option to select the status of orders that are to be sent to ReferralCandy
