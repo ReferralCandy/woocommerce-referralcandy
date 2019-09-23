@@ -27,7 +27,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             $this->api_id           = $this->get_option('api_id');
             $this->app_id           = $this->get_option('app_id');
             $this->secret_key       = $this->get_option('secret_key');
-            $this->status_to        = $this->get_option('order_status');
+            $this->status_to        = str_replace('wc-', '', $this->get_option('order_status'));
             $this->tracking_page    = $this->get_option('tracking_page');
 
             // Actions.
@@ -44,12 +44,6 @@ if (!class_exists('WC_Referralcandy_Integration')) {
         }
 
         public function init_form_fields() {
-            $order_statuses = wc_get_order_statuses();
-            $order_status_options = [];
-            foreach ($order_statuses as $key => $value) {
-                $order_status_options[str_ireplace(' ', '-', strtolower($value))] = $value;
-            }
-
             $published_pages = get_pages(['status' => ['publish']]);
             $tracking_page_options = [];
             foreach ($published_pages as $page) {
@@ -81,7 +75,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 'order_status' => [
                     'title'             => __('Process orders with status'),
                     'type'              => 'select',
-                    'options'           => $order_status_options,
+                    'options'           => wc_get_order_statuses(),
                     'desc'              => __('Orders with this status are sent to ReferralCandy'),
                     'desc_tip'          => true,
                     'default'           => 'completed'
@@ -140,6 +134,11 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             if (get_option('timezone_string') == null) {
                 $integration_incomplete = true;
                 $message .= "<br> - Store TimeZone (i.e. Asia/Singapore)";
+            }
+
+            if (strripos(get_option('order_status')) == null || in_array(get_option('order_status'), wc_get_order_statuses())) {
+                $integration_incomplete = true;
+                $message .= "<br> - Please re-select your preferred order status to be sent to us and save your settings";
             }
 
             if ($integration_incomplete == true) {
