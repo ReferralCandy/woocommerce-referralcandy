@@ -136,7 +136,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 $message .= "<br> - Store TimeZone (i.e. Asia/Singapore)";
             }
 
-            if (strripos(get_option('order_status')) == null || in_array(get_option('order_status'), wc_get_order_statuses())) {
+            if (strripos(get_option('order_status'), 0) == null || in_array(get_option('order_status'), wc_get_order_statuses())) {
                 $integration_incomplete = true;
                 $message .= "<br> - Please re-select your preferred order status to be sent to us and save your settings";
             }
