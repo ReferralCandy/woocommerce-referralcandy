@@ -61,30 +61,30 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 'app_id' => [
                     'title'             => __('App ID', 'woocommerce-referralcandy'),
                     'type'              => 'text',
-                    'desc'              => __('You can find your App ID on https://my.referralcandy.com/settings'),
+                    'desc'              => __('You can find your App ID on https://my.referralcandy.com/settings', 'woocommerce-referralcandy'),
                     'desc_tip'          => true,
                     'default'           => ''
                 ],
                 'secret_key' => [
                     'title'             => __('Secret key', 'woocommerce-referralcandy'),
                     'type'              => 'text',
-                    'desc'              => __('You can find your API Secret Key on https://my.referralcandy.com/settings'),
+                    'desc'              => __('You can find your API Secret Key on https://my.referralcandy.com/settings', 'woocommerce-referralcandy'),
                     'desc_tip'          => true,
                     'default'           => ''
                 ],
                 'order_status' => [
-                    'title'             => __('Process orders with status'),
+                    'title'             => __('Process orders with status', 'woocommerce-referralcandy'),
                     'type'              => 'select',
                     'options'           => wc_get_order_statuses(),
-                    'desc'              => __('Orders with this status are sent to ReferralCandy'),
+                    'desc'              => __('Orders with this status are sent to ReferralCandy', 'woocommerce-referralcandy'),
                     'desc_tip'          => true,
-                    'default'           => 'completed'
+                    'default'           => 'wc-completed'
                 ],
                 'tracking_page' => [
-                    'title'             => __('Render tracking code on'),
+                    'title'             => __('Render tracking code on', 'woocommerce-referralcandy'),
                     'type'              => 'select',
                     'options'           => $tracking_page_options,
-                    'desc'              => __('Render the tracking code on the selected pages'),
+                    'desc'              => __('Render the tracking code on the selected pages', 'woocommerce-referralcandy'),
                     'desc_tip'          => true,
                     'default'           => 'checkout'
                 ],
@@ -136,7 +136,8 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 $message .= "<br> - Store TimeZone (i.e. Asia/Singapore)";
             }
 
-            if (strripos(get_option('order_status'), 'wc-', 0) == null || in_array(get_option('order_status'), wc_get_order_statuses())) {
+            $valid_statuses = array_keys($this->get_option('order_status'));
+            if (!in_array($this->get_option('order_status'), $valid_statuses)) {
                 $integration_incomplete = true;
                 $message .= "<br> - Please re-select your preferred order status to be sent to us and save your settings";
             }
