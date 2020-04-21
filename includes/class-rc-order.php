@@ -138,12 +138,9 @@ class RC_Order {
             $params     = $this->generate_request_body($this->generate_post_fields());
             $response   = wp_safe_remote_post($endpoint, $params);
 
-            error_log(
-                '** API request to: '. $endpoint .' START **
-                Request Params: {'. implode(',', $params['body']) .'}
-                Request Reponse: '. $response['body'] .'
-                ** END **'
-            );
+            # only used to cross reference requests
+            error_log('ReferralCandy API#purchase params: ' . print_r($params['body'], true));
+            error_log('ReferralCandy API#purchase response: ' . print_r(json_decode($response['body']), true));
         }
     }
 }
