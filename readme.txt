@@ -72,6 +72,9 @@ We maintain a list of FAQs on our [help page](http://help.referralcandy.com/)!
 
 == Changelog ==
 
+= 2.2.3 =
+* Fixed issue where the plugin uses the `rc_referrer_id` cookie even if non-existent
+
 = 2.2.2 =
 * Fixed failing code for logging API requests
 

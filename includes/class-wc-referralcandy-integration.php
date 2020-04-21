@@ -151,7 +151,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             try {
                 if (in_array(get_post($post_id)->post_type, ['shop_order', 'shop_subscription'])) {
                     // prevent admin cookies from automatically adding a referrer_id; this can be done manually though
-                    if (is_admin() == false) {
+                    if (is_admin() == false && isset($_COOKIE['rc_referrer_id'])) {
                         update_post_meta($post_id, 'rc_referrer_id',  $_COOKIE['rc_referrer_id']);
                     }
                 }
