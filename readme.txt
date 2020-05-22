@@ -64,7 +64,7 @@ Learn about the details on our [How ReferralCandy Works](http://www.referralcand
 
 == Frequently Asked Questions ==
 
-We maintain a list of FAQs on our [help page](http://help.referralcandy.com/)!
+We maintain a list of FAQs on our [help page](http://answers.referralcandy.com/)!
 
 == Screenshots ==
 
