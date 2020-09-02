@@ -34,8 +34,8 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             add_action('woocommerce_update_options_integration_' . $this->id,   [$this, 'process_admin_options']);
             add_action('admin_notices',                                         [$this, 'check_plugin_requirements']);
             add_action('init',                                                  [$this, 'rc_set_referrer_cookie']);
+            add_action('wp_enqueue_scripts',                                    [$this, 'render_tracking_code']);
             add_action('save_post',                                             [$this, 'add_referrer_id']);
-            add_action('template_redirect',                                     [$this, 'render_tracking_code']);
             add_action('woocommerce_thankyou',                                  [$this, 'render_post_purchase_popup']);
             add_action('woocommerce_order_status_' . $this->status_to,          [$this, 'rc_submit_purchase'], 10, 1);
 
@@ -165,7 +165,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             $rc_order->submit_purchase();
         }
 
-        public function render_tracking_code($post) {
+        public function render_tracking_code() {
             if (is_page($this->tracking_page) == true) {
                 $tracking_code = '<script type="text/javascript"> !function(d,s) { var rc = "//go.referralcandy.com/purchase/'. $this->app_id .'.js"; var js = d.createElement(s); js.src = rc; var fjs = d.getElementsByTagName(s)[0]; fjs.parentNode.insertBefore(js,fjs); }(document,"script"); </script>';
                 echo $tracking_code;

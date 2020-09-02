@@ -139,8 +139,8 @@ class RC_Order {
             $response   = wp_safe_remote_post($endpoint, $params);
 
             # only used to cross reference requests
-            error_log('ReferralCandy API#purchase params: ' . print_r($params['body'], true));
-            error_log('ReferralCandy API#purchase response: ' . print_r(json_decode($response['body']), true));
+            // error_log('ReferralCandy API#purchase params: ' . print_r($params['body'], true));
+            // error_log('ReferralCandy API#purchase response: ' . print_r(json_decode($response['body']), true));
         }
     }
 }
