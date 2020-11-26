@@ -111,7 +111,6 @@ class RC_Order {
         // sort keys
         ksort($post_fields);
 
-//         return array_merge(['accessID' => $this->api_id], $post_fields);
         return $post_fields;
     }
 
