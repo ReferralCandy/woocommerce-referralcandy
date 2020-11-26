@@ -38,6 +38,8 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             add_action('save_post',                                             [$this, 'add_referrer_id']);
             add_action('woocommerce_thankyou',                                  [$this, 'render_post_purchase_popup']);
             add_action('woocommerce_order_status_' . $this->status_to,          [$this, 'rc_submit_purchase'], 10, 1);
+            add_action('woocommerce_review_order_before_submit',                [$this, 'render_accepts_marketing_field']);
+            add_action('woocommerce_checkout_update_order_meta',                [$this, 'capture_accepts_marketing_value']);
 
             // Filters.
             add_filter('woocommerce_settings_api_sanitized_fields_' . $this->id, [$this, 'sanitize_settings']);
@@ -88,6 +90,14 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                     'desc_tip'          => true,
                     'default'           => 'checkout'
                 ],
+                'accepts_marketing_label' => [
+                    'title'             => __('Accepts marketing checkbox label', 'woocommerce-referralcandy'),
+                    'type'              => 'text',
+                    'css'               => 'width: 50%',
+                    'desc'              => __('Render the tracking code on the selected pages', 'woocommerce-referralcandy'),
+                    'desc_tip'          => true,
+                    'default'           => 'I would like to receive referral marketing and promotional emails'
+                ],
                 'popup' => [
                     'title'             => __('Post-purchase Popup', 'woocommerce-referralcandy'),
                     'label'             => __('Enable post-purchase Popup', 'woocommerce-referralcandy'),
@@ -97,9 +107,11 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 ],
                 'popup_quickfix' => [
                     'title'             => __('Post-purchase Popup Quickfix', 'woocommerce-referralcandy'),
-                    'label'             => __('Popup is breaking the checkout page?'.'
-                                                Try enabling this option to apply the quickfix!',
-                                                'woocommerce-referralcandy'),
+                    'label'             => __(
+                        'Popup is breaking the checkout page?
+                        Try enabling this option to apply the quickfix!',
+                        'woocommerce-referralcandy'
+                    ),
                     'type'              => 'checkbox',
                     'desc_tip'          => false,
                     'default'           => ''
@@ -113,6 +125,22 @@ if (!class_exists('WC_Referralcandy_Integration')) {
 
         private function is_option_enabled($option_name) {
             return $this->get_option($option_name) == 'yes'? true : false;
+        }
+
+        public function render_accepts_marketing_field( $checkout ) {
+            echo "<div style='width: 100%;'>";
+            woocommerce_form_field( 'rc_accepts_marketing', array(
+                'type'          => 'checkbox',
+                'label'         => $this->get_option('accepts_marketing_label'),
+                'required'      => false,
+            ), false);
+            echo "</div>";
+        }
+
+        public function capture_accepts_marketing_value( $order_id ) {
+            if ( ! empty( $_POST['rc_accepts_marketing'] ) ) {
+                update_post_meta( $order_id, 'rc_accepts_marketing', sanitize_text_field( $_POST['rc_accepts_marketing'] ) );
+            }
         }
 
         public function check_plugin_requirements() {
@@ -184,7 +212,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                         data-lname='$rc_order->last_name'
                         data-email='$rc_order->email'
                         data-accepts-marketing='false'
-                        ></div>";
+                        ></div><style>iframe[src*='portal.referralcandy.com']{ height: 100% !important; }</style>";
 
                 $popup_script = '<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.defer=true;js.src="//portal.referralcandy.com/assets/widgets/refcandy-lollipop.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","refcandy-lollipop-js");</script>';
 

@@ -72,6 +72,12 @@ We maintain a list of FAQs on our [help page](http://answers.referralcandy.com/)
 
 == Changelog ==
 
+= 2.3.0 =
+* Added marketing acceptance checkbox on checkout
+* Added option to customize marketing acceptance label
+* Updated order class to include `accepts_marketing` data taken from marketing acceptance upon checkout
+* Added feature that adds a note on the order if a purchase was successfully submitted to ReferralCandy
+
 = 2.2.4 =
 * Fixed issue where there the tracking code is rendered before the html
 
