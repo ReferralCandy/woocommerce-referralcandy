@@ -72,6 +72,10 @@ We maintain a list of FAQs on our [help page](http://answers.referralcandy.com/)
 
 == Changelog ==
 
+= 2.3.1 =
+* Added checkbox to enable/disable marketing checkbox on checkout
+* Post-purchase popup widget uses store locale upon checkout
+
 = 2.3.0 =
 * Added marketing acceptance checkbox on checkout
 * Added option to customize marketing acceptance label
