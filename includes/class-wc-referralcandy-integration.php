@@ -90,6 +90,14 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                     'desc_tip'          => true,
                     'default'           => 'checkout'
                 ],
+                'enable_marketing_checkbox' => [
+                    'title'             => __('Enable accepts marketing checkbox on checkout', 'woocommerce-referralcandy'),
+                    'type'              => 'checkbox',
+                    'desc'              => __('Switch on/off the additional accepts marketing checkbox on checkout.\n
+                                               NOTE: Turning this off would mark all customers as unsubscribed upon checkout by default', 'woocommerce-referralcandy'),
+                    'desc_tip'          => true,
+                    'default'           => 'yes'
+                ],
                 'accepts_marketing_label' => [
                     'title'             => __('Accepts marketing checkbox label', 'woocommerce-referralcandy'),
                     'type'              => 'text',
@@ -103,7 +111,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                     'label'             => __('Enable post-purchase Popup', 'woocommerce-referralcandy'),
                     'type'              => 'checkbox',
                     'desc_tip'          => false,
-                    'default'           => ''
+                    'default'           => 'no'
                 ],
                 'popup_quickfix' => [
                     'title'             => __('Post-purchase Popup Quickfix', 'woocommerce-referralcandy'),
@@ -114,7 +122,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                     ),
                     'type'              => 'checkbox',
                     'desc_tip'          => false,
-                    'default'           => ''
+                    'default'           => 'no'
                 ]
             ];
         }
@@ -128,13 +136,15 @@ if (!class_exists('WC_Referralcandy_Integration')) {
         }
 
         public function render_accepts_marketing_field( $checkout ) {
-            echo "<div style='width: 100%;'>";
-            woocommerce_form_field( 'rc_accepts_marketing', array(
-                'type'          => 'checkbox',
-                'label'         => $this->get_option('accepts_marketing_label'),
-                'required'      => false,
-            ), false);
-            echo "</div>";
+            if ( $this->is_option_enabled('enable_marketing_checkbox') == true ) {
+                echo "<div style='width: 100%;'>";
+                woocommerce_form_field( 'rc_accepts_marketing', array(
+                    'type'          => 'checkbox',
+                    'label'         => $this->get_option('accepts_marketing_label'),
+                    'required'      => false,
+                ), false);
+                echo "</div>";
+            }
         }
 
         public function capture_accepts_marketing_value( $order_id ) {
@@ -194,10 +204,40 @@ if (!class_exists('WC_Referralcandy_Integration')) {
         }
 
         public function render_tracking_code() {
-            if (is_page($this->tracking_page) == true) {
-                $tracking_code = '<script type="text/javascript"> !function(d,s) { var rc = "//go.referralcandy.com/purchase/'. $this->app_id .'.js"; var js = d.createElement(s); js.src = rc; var fjs = d.getElementsByTagName(s)[0]; fjs.parentNode.insertBefore(js,fjs); }(document,"script"); </script>';
+            $shouldRenderTrackingCode = is_order_received_page() || (is_order_received_page() && is_page($this->tracking_page));
+            if ($shouldRenderTrackingCode) {
+                $tracking_code = '<script async type="text/javascript">
+                    !function(d,s) { var rc = "//go.referralcandy.com/purchase/'. $this->app_id .'.js";
+                    var js = d.createElement(s); js.src = rc; var fjs = d.getElementsByTagName(s)[0];
+                    fjs.parentNode.insertBefore(js,fjs); }(document,"script"); </script>';
                 echo $tracking_code;
             }
+        }
+
+        public function get_current_locale() {
+            $localeMapping = [ // Map to ReferralCandy format
+                'zh_CN' => 'zh-CN',
+                'zh_HK' => 'zh-HK',
+                'zh_TW' => 'zh-TW',
+                'pt_BR' => 'pt-BR'
+            ];
+
+            try {
+                $locale = get_locale();
+
+                if (!empty($locale)) {
+                    if (key_exists($locale, $localeMapping)) {
+                        $locale = $localeMapping[$locale];
+                    } else {
+                        $locale = strstr($locale, '_', true); // Example: en_US > en
+                    }
+                }
+            }
+            catch(Exception $e) {
+                $locale = 'en';
+            }
+
+            return $locale;
         }
 
         public function render_post_purchase_popup($order_id) {
@@ -211,6 +251,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                         data-fname='$rc_order->first_name'
                         data-lname='$rc_order->last_name'
                         data-email='$rc_order->email'
+                        data-locale='". $this->get_current_locale() ."'
                         data-accepts-marketing='false'
                         ></div><style>iframe[src*='portal.referralcandy.com']{ height: 100% !important; }</style>";
 
