@@ -222,14 +222,19 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 'pt_BR' => 'pt-BR'
             ];
 
-            $locale = get_locale();
+            try {
+                $locale = get_locale();
 
-            if (!empty($locale)) {
-                if (key_exists($locale, $localeMapping)) {
-                    $locale = $localeMapping[$locale];
-                } else {
-                    $locale = strstr($locale, '_', true); // Example: en_US > en
+                if (!empty($locale)) {
+                    if (key_exists($locale, $localeMapping)) {
+                        $locale = $localeMapping[$locale];
+                    } else {
+                        $locale = strstr($locale, '_', true); // Example: en_US > en
+                    }
                 }
+            }
+            catch(Exception $e) {
+                $locale = 'en';
             }
 
             return $locale;
