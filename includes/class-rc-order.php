@@ -16,6 +16,7 @@ class RC_Order {
     public $first_name;
     public $last_name;
     public $email;
+    public $locale;
     public $discount_code;
     public $total;
     public $currency;
@@ -46,7 +47,8 @@ class RC_Order {
             $this->browser_ip        = $this->order->customer_ip_address;
             $this->user_agent        = $this->order->customer_user_agent;
             $this->accepts_marketing = get_post_meta($wc_order_id, 'rc_accepts_marketing', true) ? 'true' : 'false';
-            $this->referrer_id       = get_post_meta($wc_order_id, 'rc_referrer_id', true);
+            $this->referrer_id       = get_post_meta($wc_order_id, 'rc_aic', true);
+            $this->locale            = get_post_meta($wc_order_id, 'rc_loc', true);
         } else {
             $order_data = $this->order->get_data();
 
@@ -60,7 +62,8 @@ class RC_Order {
             $this->browser_ip        = $order_data['customer_ip_address'];
             $this->user_agent        = $order_data['customer_user_agent'];
             $this->accepts_marketing = $this->order->get_meta('rc_accepts_marketing', true, 'view') ? 'true' : 'false';
-            $this->referrer_id       = $this->order->get_meta('rc_referrer_id', true, 'view');
+            $this->referrer_id       = $this->order->get_meta('rc_aic', true, 'view');
+            $this->locale            = $this->order->get_meta('rc_loc', true, 'view');
         }
 
         $this->api_id           = $integration->api_id;
@@ -74,6 +77,7 @@ class RC_Order {
             'first_name'            => $this->first_name,
             'last_name'             => $this->last_name,
             'email'                 => $this->email,
+            'locale'                => $this->locale,
             'order_timestamp'       => $this->order_timestamp,
             'browser_ip'            => $this->browser_ip,
             'user_agent'            => $this->user_agent,

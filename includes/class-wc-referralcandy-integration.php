@@ -35,7 +35,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             add_action('admin_notices',                                         [$this, 'check_plugin_requirements']);
             add_action('init',                                                  [$this, 'rc_set_referrer_cookie']);
             add_action('wp_enqueue_scripts',                                    [$this, 'render_tracking_code']);
-            add_action('save_post',                                             [$this, 'add_referrer_id']);
+            add_action('save_post',                                             [$this, 'add_order_meta_data']);
             add_action('woocommerce_thankyou',                                  [$this, 'render_post_purchase_popup']);
             add_action('woocommerce_order_status_' . $this->status_to,          [$this, 'rc_submit_purchase'], 10, 1);
             add_action('woocommerce_review_order_before_submit',                [$this, 'render_accepts_marketing_field']);
@@ -185,12 +185,18 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             }
         }
 
-        public function add_referrer_id($post_id) {
+        public function add_order_meta_data($post_id) {
             try {
                 if (in_array(get_post($post_id)->post_type, ['shop_order', 'shop_subscription'])) {
                     // prevent admin cookies from automatically adding a referrer_id; this can be done manually though
-                    if (is_admin() == false && isset($_COOKIE['rc_referrer_id'])) {
-                        update_post_meta($post_id, 'rc_referrer_id',  $_COOKIE['rc_referrer_id']);
+                    if (is_admin() == false) {
+                        // set order locale
+                        update_post_meta($post_id, 'rc_loc', $this->get_current_locale());
+
+                        // set order referrer
+                        if (isset($_COOKIE['rc_referrer_id'])) {
+                          update_post_meta($post_id, 'rc_aic', $_COOKIE['rc_referrer_id']);
+                        }
                     }
                 }
             } catch(Exception $e) {
@@ -223,7 +229,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             ];
 
             try {
-                $locale = get_locale();
+                $locale = get_user_locale();
 
                 if (!empty($locale)) {
                     if (key_exists($locale, $localeMapping)) {

@@ -72,6 +72,11 @@ We maintain a list of FAQs on our [help page](http://answers.referralcandy.com/)
 
 == Changelog ==
 
+= 2.3.2 =
+* Added locale field on order meta to be sent to ReferralCandy to send emails with correct languages to customers
+* Updated additional order meta to have short keys to save space
+* Fixed translation of post-purchase popup widget on checkout
+
 = 2.3.1 =
 * Added checkbox to enable/disable marketing checkbox on checkout
 * Post-purchase popup widget uses store locale upon checkout
