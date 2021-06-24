@@ -148,6 +148,12 @@ class RC_Order {
             $response       = wp_safe_remote_post($endpoint, $params);
             $response_body  = json_decode($response['body']);
 
+            if (is_wp_error($response)) {
+                return error_log(print_r($response, TRUE));
+            }
+
+            $response_body  = json_decode($response['body']);
+
             if ($response_body->message == 'Success' && !empty($response_body->referralcorner_url)) {
                 $this->order->add_order_note('Order sent to ReferralCandy');
             }
