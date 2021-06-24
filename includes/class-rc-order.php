@@ -146,7 +146,6 @@ class RC_Order {
         if (!empty($this->secret_key) && !empty($this->api_id)) {
             $params         = $this->generate_request_body($this->generate_post_fields());
             $response       = wp_safe_remote_post($endpoint, $params);
-            $response_body  = json_decode($response['body']);
 
             if (is_wp_error($response)) {
                 return error_log(print_r($response, TRUE));
