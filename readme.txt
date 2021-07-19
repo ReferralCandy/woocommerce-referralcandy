@@ -3,7 +3,7 @@
 Contributors: referralcandy
 Tags: referral program, customer referral program, refer-a-friend, tell-a-friend, marketing, customer acquisition, word-of-mouth, marketing app, viral marketing, social marketing, marketing, woocommerce
 Requires at least: 3.0
-Tested up to: 5.4
+Tested up to: 5.7
 Stable tag: trunk
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -71,6 +71,9 @@ We maintain a list of FAQs on our [help page](http://answers.referralcandy.com/)
 1. ReferralCandy for WooCommerce Plugin Settings Page
 
 == Changelog ==
+
+= 2.3.3 =
+* Fixed errors from API calls - PR from Jared Hill (https://github.com/jaredhill4)
 
 = 2.3.2 =
 * Added locale field on order meta to be sent to ReferralCandy to send emails with correct languages to customers
