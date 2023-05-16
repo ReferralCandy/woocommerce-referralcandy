@@ -72,6 +72,9 @@ We maintain a list of FAQs on our [help page](http://answers.referralcandy.com/)
 
 == Changelog ==
 
+= 2.3.4 =
+* Fixed issue where contact being unsubscribed
+
 = 2.3.3 =
 * Fixed errors from API calls - PR from Jared Hill (https://github.com/jaredhill4)
 

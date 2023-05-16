@@ -258,7 +258,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                         data-lname='$rc_order->last_name'
                         data-email='$rc_order->email'
                         data-locale='". $this->get_current_locale() ."'
-                        data-accepts-marketing='false'
+                        data-accepts-marketing='$rc_order->accepts_marketing'
                         ></div><style>iframe[src*='portal.referralcandy.com']{ height: 100% !important; }</style>";
 
                 $popup_script = '<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.defer=true;js.src="//portal.referralcandy.com/assets/widgets/refcandy-lollipop.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","refcandy-lollipop-js");</script>';
