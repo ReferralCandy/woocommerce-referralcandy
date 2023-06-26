@@ -72,6 +72,9 @@ We maintain a list of FAQs on our [help page](http://answers.referralcandy.com/)
 
 == Changelog ==
 
+= 2.4.0 =
+* Updated to use WC CRUD class for compatibility with HPOS
+
 = 2.3.4 =
 * Fixed issue where contact being unsubscribed
 

@@ -6,7 +6,7 @@
  * Author: ReferralCandy
  * Author URI: http://www.referralcandy.com
  * Text Domain: woocommerce-referralcandy
- * Version: 2.3.4
+ * Version: 2.4.0
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,12 +28,15 @@ if (!defined('ABSPATH')) {
 
 if (preg_grep("/\/woocommerce.php$/", apply_filters('active_plugins', get_option('active_plugins'))) !== null) {
     if (!class_exists('WC_Referralcandy')) {
-        class WC_Referralcandy {
-            public function __construct() {
+        class WC_Referralcandy
+        {
+            public function __construct()
+            {
                 add_action('plugins_loaded', array($this, 'init'));
             }
 
-            public function init() {
+            public function init()
+            {
                 if (class_exists('WC_Integration')) {
                     autoload_classes();
                     add_filter('woocommerce_integrations', [$this, 'add_integration']);
@@ -44,7 +47,8 @@ if (preg_grep("/\/woocommerce.php$/", apply_filters('active_plugins', get_option
                 load_plugin_textdomain('woocommerce-referralcandy', false, dirname(plugin_basename(__FILE__)) . '/languages/');
             }
 
-            public function add_integration($integrations) {
+            public function add_integration($integrations)
+            {
                 $integrations[] = 'WC_Referralcandy_Integration';
 
                 return $integrations;
@@ -54,7 +58,8 @@ if (preg_grep("/\/woocommerce.php$/", apply_filters('active_plugins', get_option
         $WC_Referralcandy = new WC_Referralcandy(__FILE__);
     }
 
-    function autoload_classes() {
+    function autoload_classes()
+    {
         $files = scandir(dirname(__FILE__) . '/includes');
         $valid_extensions = ['php'];
         foreach ($files as $index => $file) {
@@ -64,11 +69,13 @@ if (preg_grep("/\/woocommerce.php$/", apply_filters('active_plugins', get_option
         }
     }
 
-    function wc_referralcandy_plugin_activate() {
+    function wc_referralcandy_plugin_activate()
+    {
         add_option('wc_referralcandy_plugin_do_activation_redirect', true);
     }
 
-    function wc_referralcandy_plugin_redirect() {
+    function wc_referralcandy_plugin_redirect()
+    {
         if (get_option('wc_referralcandy_plugin_do_activation_redirect')) {
             delete_option('wc_referralcandy_plugin_do_activation_redirect');
 
@@ -81,14 +88,16 @@ if (preg_grep("/\/woocommerce.php$/", apply_filters('active_plugins', get_option
         }
     }
 
-    function missing_prerequisite_notification() {
+    function missing_prerequisite_notification()
+    {
         $message = 'ReferralCandy <strong>requires</strong> Woocommerce to be installed and activated';
         printf('<div class="notice notice-error"><p>%1$s</p></div>', $message);
     }
 
-    function rc_plugin_links($links) {
+    function rc_plugin_links($links)
+    {
         $rc_tab_url = "admin.php?page=wc-settings&tab=integration&section=referralcandy";
-        $settings_link = "<a href='". esc_url( get_admin_url(null, $rc_tab_url) ) ."'>Settings</a>";
+        $settings_link = "<a href='" . esc_url(get_admin_url(null, $rc_tab_url)) . "'>Settings</a>";
 
         array_unshift($links, $settings_link);
 
