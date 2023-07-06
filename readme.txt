@@ -16,7 +16,7 @@ The 'ReferralCandy for WooCommerce' plugin automatically integrates ReferralCand
 
 * Get more sales from word-of-mouth
 * Reward customers for referring their friends to your store
-* Easy install. 30 day risk-free trial. Get up and running today!
+* Easy install. 14 day risk-free trial. Get up and running today!
 
 = Boost your sales with a referral marketing program =
 
