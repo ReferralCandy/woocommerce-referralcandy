@@ -60,29 +60,26 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 'api_id' => [
                     'title' => __('API Access ID', 'woocommerce-referralcandy'),
                     'type' => 'text',
-                    'desc' => __('You can find your API Access ID on https://my.referralcandy.com/settings'),
-                    'desc_tip' => true,
+                    'desc_tip' => false,
                     'default' => ''
                 ],
                 'app_id' => [
                     'title' => __('App ID', 'woocommerce-referralcandy'),
                     'type' => 'text',
-                    'desc' => __('You can find your App ID on https://my.referralcandy.com/settings', 'woocommerce-referralcandy'),
-                    'desc_tip' => true,
+                    'desc_tip' => false,
                     'default' => ''
                 ],
                 'secret_key' => [
                     'title' => __('Secret key', 'woocommerce-referralcandy'),
                     'type' => 'text',
-                    'desc' => __('You can find your API Secret Key on https://my.referralcandy.com/settings', 'woocommerce-referralcandy'),
-                    'desc_tip' => true,
+                    'desc_tip' => false,
                     'default' => ''
                 ],
                 'order_status' => [
                     'title' => __('Process orders with status', 'woocommerce-referralcandy'),
                     'type' => 'select',
                     'options' => wc_get_order_statuses(),
-                    'desc' => __('Orders with this status are sent to ReferralCandy', 'woocommerce-referralcandy'),
+                    'description' => __('Orders with this status are sent to ReferralCandy', 'woocommerce-referralcandy'),
                     'desc_tip' => true,
                     'default' => 'wc-completed'
                 ],
@@ -90,15 +87,14 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                     'title' => __('Render tracking code on', 'woocommerce-referralcandy'),
                     'type' => 'select',
                     'options' => $tracking_page_options,
-                    'desc' => __('Render the tracking code on the selected pages', 'woocommerce-referralcandy'),
+                    'description' => __('Render the tracking code on the selected pages', 'woocommerce-referralcandy'),
                     'desc_tip' => true,
                     'default' => 'checkout'
                 ],
                 'enable_marketing_checkbox' => [
                     'title' => __('Enable accepts marketing checkbox on checkout', 'woocommerce-referralcandy'),
                     'type' => 'checkbox',
-                    'desc' => __('Switch on/off the additional accepts marketing checkbox on checkout.\n
-                                               NOTE: Turning this off would mark all customers as unsubscribed upon checkout by default', 'woocommerce-referralcandy'),
+                    'description' => __('Switch on/off the additional accepts marketing checkbox on checkout.<br>NOTE: Turning this off would mark all customers as unsubscribed upon checkout by default', 'woocommerce-referralcandy'),
                     'desc_tip' => true,
                     'default' => 'yes'
                 ],
@@ -106,7 +102,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                     'title' => __('Accepts marketing checkbox label', 'woocommerce-referralcandy'),
                     'type' => 'text',
                     'css' => 'width: 50%',
-                    'desc' => __('Render the tracking code on the selected pages', 'woocommerce-referralcandy'),
+                    'description' => __('Render the tracking code on the selected pages', 'woocommerce-referralcandy'),
                     'desc_tip' => true,
                     'default' => 'I would like to receive referral marketing and promotional emails'
                 ],
