@@ -1,26 +1,32 @@
-=== ReferralCandy for WooCommerce ===
+=== ReferralCandy – Referral & Affiliate Program ===
 
 Contributors: referralcandy
-Tags: referral program, customer referral program, refer-a-friend, tell-a-friend, marketing, customer acquisition, word-of-mouth, marketing app, viral marketing, social marketing, marketing, woocommerce
+Tags: referral program, customer referral program, referral software, refer-a-friend, affiliate program, referral, word-of-mouth, referral marketing, affiliate, affiliate marketing, affiliate manager, woo commerce
 Requires at least: 3.0
 Tested up to: 6.3
 Stable tag: trunk
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-The 'ReferralCandy for WooCommerce' plugin automatically integrates ReferralCandy with your WooCommerce store. Get more referred sales now!
+ReferralCandy: A customer referral program for clients who love your brand! Get more referral sales now!
 
 == Description ==
 
 [ReferralCandy](http://www.referralcandy.com/) is a powerful tool allowing you to automate customer referral campaigns for your WooCommerce store.
 
-* Get more sales from word-of-mouth
+* Get more sales from referrals
 * Reward customers for referring their friends to your store
 * Easy install. 14 day risk-free trial. Get up and running today!
 
-= Boost your sales with a referral marketing program =
+= Create a customer referral program for your brand and grow sales with referral and affiliate marketing =
 
-ReferralCandy helps you increase your sales by rewarding your customers when they refer people to your store. We give your customers a personal reward link that they can share with their friends.
+ReferralCandy helps Woocommerce stores attract customers, increase sales and grow using the power of referral, affiliate marketing and rewards. Referral programs and affiliate programs allow you to retain customers and reward them when they refer their friends. Customers get a referral link they can share with friends to promote the brand. Referral and affiliate programs work for all industries: fashion, nutrition, electronics, home, pet and more.
+
+* Set up a referral or affiliate program and get the first sales within 30 minutes
+* Enable post-purchase popups, emails and pages to enroll customers in the program
+* Automate customer rewards: Cash and coupons for one-off and subscription sales
+* Customize your referral program with your logo, images and brand colors
+* Integrate with Klaviyo, ReCharge, Skio, Awtomic, Bold, Loop, Appstle, Stay, Seal
 
 = Easily add a refer-a-friend program to your store =
 
@@ -35,6 +41,8 @@ Simple to get up and running today -- no developers needed!
 Everybody wins: your original customer gets rewarded, their friends get a discount, you make more sales and get a new customer! We do all the referral tracking, so you don't have to do anything.
 
 Learn about the details on our [How ReferralCandy Works](http://www.referralcandy.com/how-it-works) page.
+
+https://www.youtube.com/watch?v=arlElJkyGwc
 
 == Installation ==
 
@@ -64,13 +72,16 @@ Learn about the details on our [How ReferralCandy Works](http://www.referralcand
 
 == Frequently Asked Questions ==
 
-We maintain a list of FAQs on our [help page](http://answers.referralcandy.com/)!
+We maintain a list of FAQs on our [help page](https://help.referralcandy.com/)!
 
 == Screenshots ==
 
 1. ReferralCandy for WooCommerce Plugin Settings Page
 
 == Changelog ==
+
+= 2.4.2 =
+* Update readme.txt
 
 = 2.4.1 =
 * Fixed issue where plugin form fields not displaying tooltip
