@@ -80,6 +80,9 @@ We maintain a list of FAQs on our [help page](https://help.referralcandy.com/)!
 
 == Changelog ==
 
+= 2.4.3 -
+* Update integration description
+
 = 2.4.2 =
 * Update readme.txt
 
