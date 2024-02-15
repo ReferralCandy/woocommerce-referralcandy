@@ -80,7 +80,10 @@ We maintain a list of FAQs on our [help page](https://help.referralcandy.com/)!
 
 == Changelog ==
 
-= 2.4.3 -
+= 2.4.4 =
+* Ensure links open in a new tab
+
+= 2.4.3 =
 * Update integration description
 
 = 2.4.2 =
