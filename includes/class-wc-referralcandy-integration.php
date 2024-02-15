@@ -22,13 +22,17 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             $this->id = 'referralcandy';
             $this->method_title = __('ReferralCandy', 'woocommerce-referralcandy');
             $this->method_description = __('Welcome to ReferralCandy! Get started with our easy integration process:<br/>'.
-            '<mark>Note: If you have already completed your account setup in the ReferralCandy dashboard, please copy your API Access ID, App ID, and Secret Key below.</mark><br/>'.
-            '<ol><li><b>Start Your Free Trial:</b> Click the Sign Up button below to begin.</li>'.
+            '<div style="background: #fff; border: 1px solid #c3c4c7; width: fit-content;">'.
+            '<p style="padding: 1px 6px; margin: 4px;">Note: If you have already completed your account setup in the ReferralCandy dashboard, please copy your API Access ID, App ID, and Secret Key below.</p>'.
+            '</div>'.
+            '<ol>'.
+            '<li><b>Start Your Free Trial:</b> Click the Sign Up button below to begin.</li>'.
             '<a target="__blank" href="https://my.referralcandy.com/signup" class="button">Sign Up</a>'.
             '<li><b>Integrate with WooCommerce:</b> In your dashboard, go to <a href="https://my.referralcandy.com/integration">"Integrations" > "WooCommerce"</a>.</li>'.
-            '<li><b>Enter API Details:</b> Copy your API Access ID, App ID, and Secret Key and paste here.</li></ol>'.
+            '<li><b>Enter API Details:</b> Copy your API Access ID, App ID, and Secret Key and paste here.</li>'.
+            '</ol>'.
             'That\'s it! Your store is now connected. A purchase is required to confirm integration success.<br/><br/>'.
-            'Need help with integration? Check out our <a href="https://www.referralcandy.com/blog/woocommerce-setup?utm_source=woocommerce-plugin&utm_medium=plugin&utm_campaign=woocommerce-integration-blog" target="__blank">blog</a> for an extensive guide and useful tips.',
+            'Need help with integration? Check out our <a href="https://www.referralcandy.com/blog/woocommerce-setup?utm_source=woocommerce-plugin&utm_medium=plugin&utm_campaign=woocommerce-integration-blog" target="__blank">blog</a> for an extensive guide and useful tips.', 
             'woocommerce-referralcandy');
 
             // Load the settings.
