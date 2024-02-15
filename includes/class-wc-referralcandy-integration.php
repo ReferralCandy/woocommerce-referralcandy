@@ -27,8 +27,8 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             '</div>'.
             '<ol>'.
             '<li><b>Start Your Free Trial:</b> Click the Sign Up button below to begin.</li>'.
-            '<a target="__blank" href="https://my.referralcandy.com/signup" class="button">Sign Up</a>'.
-            '<li><b>Integrate with WooCommerce:</b> In your dashboard, go to <a href="https://my.referralcandy.com/integration">"Integrations" > "WooCommerce"</a>.</li>'.
+            '<a href="https://my.referralcandy.com/signup" target="__blank" class="button">Sign Up</a>'.
+            '<li><b>Integrate with WooCommerce:</b> In your dashboard, go to <a href="https://my.referralcandy.com/integration" target="__blank">"Integrations" > "WooCommerce"</a>.</li>'.
             '<li><b>Enter API Details:</b> Copy your API Access ID, App ID, and Secret Key and paste here.</li>'.
             '</ol>'.
             'That\'s it! Your store is now connected. A purchase is required to confirm integration success.<br/><br/>'.
