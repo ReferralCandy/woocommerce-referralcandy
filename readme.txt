@@ -46,29 +46,19 @@ https://www.youtube.com/watch?v=arlElJkyGwc
 
 == Installation ==
 
-**Requires WooCommerce** 2.3.3 or higher
+**Requires WooCommerce 2.3.3 or higher**
 
-= From your WordPress dashboard (recommended) =
+Welcome to ReferralCandy! Get started with our easy integration process:
 
-1. Go to **Plugins > Add New**
-2. Search for: `ReferralCandy`
-3. Click on **Install Now** to install and activate the plugin
+**Note: If you have already completed your account setup in the ReferralCandy dashboard, you may skip step 1.**
 
-= From WordPress.org =
+1. Start Your Free Trial: [Sign up here](https://my.referralcandy.com/signup?utm_source=woocommerce-plugin&utm_medium=plugin&utm_campaign=woocommerce-integration-signup).
+2. Integrate with WooCommerce: In your dashboard, go to ["Integrations" > "WooCommerce"](https://my.referralcandy.com/integration).
+3. Enter API Details: Copy your API Access ID, App ID, and Secret Key and paste it in the Woocommerce plugin integration page.
 
-1. Download the latest version zip file
-3. Go to **Plugins > Add New**
-4. Click on **Upload Plugin** to upload the zip file
-5. Activate the plugin after the installation
+That's it! Your store is now connected. A purchase is required to confirm integration success.
 
-= Configure =
-
-1. Go to **WooCommerce > Settings > Integration > ReferralCandy**
-2. Fill-out your App ID and Secret Key. You can get them from [ReferralCandy Admin Settings > Plugin tokens](https://my.referralcandy.com/settings))
-3. Click on **Save changes** and it's done!
-
-**Please make sure that the plugin can make outbound requests for the API calls
-
+Need help with integration? Check out our [blog](https://www.referralcandy.com/blog/woocommerce-setup?utm_source=woocommerce-plugin&utm_medium=plugin&utm_campaign=woocommerce-integration-blog) for an extensive guide and useful tips.
 
 == Frequently Asked Questions ==
 
@@ -79,6 +69,9 @@ We maintain a list of FAQs on our [help page](https://help.referralcandy.com/)!
 1. ReferralCandy for WooCommerce Plugin Settings Page
 
 == Changelog ==
+
+= 2.4.5 =
+* Update readme.txt
 
 = 2.4.4 =
 * Ensure links open in a new tab
