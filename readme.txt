@@ -1,4 +1,4 @@
-=== ReferralCandy – Referral & Affiliate Program ===
+=== ReferralCandy for WooCommerce – Advanced Referral & Affiliate Program ===
 
 Contributors: referralcandy
 Tags: referral program, customer referral program, referral software, refer-a-friend, affiliate program, referral, word-of-mouth, referral marketing, affiliate, affiliate marketing, affiliate manager, woo commerce
@@ -8,7 +8,7 @@ Stable tag: trunk
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-ReferralCandy: A customer referral program for clients who love your brand! Get more referral sales now!
+Transform your customers into brand advocates with ReferralCandy for WooCommerce. Easily set up powerful referral and affiliate programs to boost your sales and enhance customer loyalty. Seamlessly integrates with WooCommerce, enabling you to reward and grow your customer base effectively.
 
 == Description ==
 
