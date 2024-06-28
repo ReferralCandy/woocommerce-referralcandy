@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ReferralCandy for WooCommerce – Advanced Referral & Affiliate Program
  * Plugin URI: https://github.com/ReferralCandy/woocommerce-referralcandy
- * Description: Transform your customers into brand advocates with ReferralCandy for WooCommerce. Easily set up powerful referral and affiliate programs to boost your sales and enhance customer loyalty. Seamlessly integrates with WooCommerce, enabling you to reward and grow your customer base effectively.
+ * Description: Drive sales and customer loyalty with ReferralCandy. Set up effective referral and affiliate programs easily to reward and grow your customer base.
  * Author: ReferralCandy
  * Author URI: http://www.referralcandy.com
  * Text Domain: woocommerce-referralcandy

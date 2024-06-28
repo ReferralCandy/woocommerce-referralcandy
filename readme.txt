@@ -8,7 +8,7 @@ Stable tag: trunk
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Transform your customers into brand advocates with ReferralCandy for WooCommerce. Easily set up powerful referral and affiliate programs to boost your sales and enhance customer loyalty. Seamlessly integrates with WooCommerce, enabling you to reward and grow your customer base effectively.
+Drive sales and customer loyalty with ReferralCandy. Set up effective referral and affiliate programs easily to reward and grow your customer base.
 
 == Description ==
 
