@@ -236,7 +236,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
         }
 
         public function add_order_meta_data($post_id)
-        {                 
+        {
             try {
                 if (in_array(get_post($post_id)->post_type, ['shop_order', 'shop_subscription'])) {   
                     // Prevent admin cookies from automatically adding a referrer_id; this can be done manually though
