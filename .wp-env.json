@@ -1,0 +1,13 @@
+{
+    "phpVersion": "7.4",
+    "core": "https://wordpress.org/wordpress-6.4.zip",
+    "plugins": [
+        "https://downloads.wordpress.org/plugin/woocommerce.9.0.1.zip",
+        "."
+    ],
+    "config": {
+        "JETPACK_AUTOLOAD_DEV": true,
+        "WP_DEBUG": true,
+        "SCRIPT_DEBUG": true
+    }
+}

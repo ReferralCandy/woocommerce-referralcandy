@@ -6,7 +6,10 @@
  * Author: ReferralCandy
  * Author URI: http://www.referralcandy.com
  * Text Domain: woocommerce-referralcandy
- * Version: 2.4.6
+ * Version: 2.5.0
+ * Requires at least: 6.4
+ * Requires PHP: 7.4
+ * Tested up to: 6.6
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
