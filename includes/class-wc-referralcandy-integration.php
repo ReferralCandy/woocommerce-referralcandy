@@ -176,11 +176,10 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             }
         }
 
-        private function remove_custom_metadata($order, $type)
+        private function remove_accepts_marketing_metadata($order, $type)
         {
-            // If order is carrying over previous custom metadata fields, remove them
             $order_meta_data = $order->get_meta_data();
-            $meta_keys_to_remove = ['rc_accepts_marketing', 'rc_loc', 'rc_aic'];
+            $meta_keys_to_remove = ['rc_accepts_marketing'];
 
             foreach ($order_meta_data as $meta_data) {
                 if (in_array($meta_data->key, $meta_keys_to_remove)) {
@@ -199,7 +198,8 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             $rc_accepts_marketing_field = $checkout_fields->get_field_from_object($this->accepts_marketing_field_id, $order);
 
             if (OrderUtil::custom_orders_table_usage_is_enabled()) {
-                $this->remove_custom_metadata($order, 'order');
+                // If order in param contains accepts marketing metadata field, remove them, its presence indicates truthy
+                $this->remove_accepts_marketing_metadata($order, 'order');
                 if (!empty($rc_accepts_marketing_field)) {
                     $order->update_meta_data('rc_accepts_marketing', $rc_accepts_marketing_field);
                 }
@@ -214,7 +214,8 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 }
                 $order->save();
             } else {
-                $this->remove_custom_metadata($order, 'post');
+                // If order in param contains accepts marketing metadata field, remove them, its presence indicates truthy
+                $this->remove_accepts_marketing_metadata($order, 'post');
                 if (!empty($rc_accepts_marketing_field)) {
                     update_post_meta($order->get_id(), 'rc_accepts_marketing', $rc_accepts_marketing_field);
                 }
