@@ -71,6 +71,9 @@ We maintain a list of FAQs on our [help page](https://help.referralcandy.com/)!
 
 == Changelog ==
 
+= 2.5.1 =
+* Fix edge case where accepts marketing does not respect user choice on subsequent orders
+
 = 2.5.0 =
 * Fix accepts referral marketing field on Woocommerce (v9.0.1) checkout page
 
