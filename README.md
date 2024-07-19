@@ -24,7 +24,7 @@ Your local environment needs to be configured to work with `wp-env`.
 
 Ensure you have fulfilled the [prerequisites](https://developer.wordpress.org/block-editor/reference-guides/packages/packages-env/#prerequisites).
 
-Using a package manager of your choice (in this case, we are using `pnpm`), enter:
+Using a package manager of your choice (in this case, we are using `pnpm`), enter in your CLI:
 
 ```
 pnpm i
