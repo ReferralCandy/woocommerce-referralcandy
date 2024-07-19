@@ -17,3 +17,18 @@ Welcome to ReferralCandy! Get started with our easy integration process:
 That's it! Your store is now connected. A purchase is required to confirm integration success.
 
 Need help with integration? Check out our [blog](https://www.referralcandy.com/blog/woocommerce-setup?utm_source=woocommerce-plugin&utm_medium=plugin&utm_campaign=woocommerce-integration-blog) for an extensive guide and useful tips.
+
+# Quick start to developing the plugin locally
+
+Your local environment needs to be configured to work with `wp-env`.
+
+Ensure you have fulfilled the [prerequisites](https://developer.wordpress.org/block-editor/reference-guides/packages/packages-env/#prerequisites).
+
+Using a package manager of your choice (in this case, we are using `pnpm`), enter in your CLI:
+
+```
+pnpm i
+pnpm run start
+```
+
+Your WordPress site should now be running on `localhost:8888`

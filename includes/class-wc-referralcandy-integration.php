@@ -7,6 +7,8 @@
  * @author   ReferralCandy
  */
 use Automattic\WooCommerce\Utilities\OrderUtil;
+use Automattic\WooCommerce\Blocks\Package;
+use Automattic\WooCommerce\Blocks\Domain\Services\CheckoutFields;
 
 if (!defined('ABSPATH')) {
     die('Direct access is prohibited.');
@@ -15,6 +17,13 @@ if (!defined('ABSPATH')) {
 if (!class_exists('WC_Referralcandy_Integration')) {
     class WC_Referralcandy_Integration extends WC_Integration
     {
+        public $api_id;
+        public $app_id;
+        public $secret_key;
+        public $status_to;
+        public $tracking_page;
+        public $accepts_marketing_field_id = 'referralcandy/accepts-marketing';
+
         public function __construct()
         {
             global $woocommerce;
@@ -53,8 +62,8 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             add_action('save_post', [$this, 'add_order_meta_data']);
             add_action('woocommerce_thankyou', [$this, 'render_post_purchase_popup']);
             add_action('woocommerce_order_status_' . $this->status_to, [$this, 'rc_submit_purchase'], 10, 1);
-            add_action('woocommerce_review_order_before_submit', [$this, 'render_accepts_marketing_field']);
-            add_action('woocommerce_checkout_update_order_meta', [$this, 'update_order_meta']);
+            add_action('woocommerce_init', [$this, 'render_accepts_marketing_field']);
+            add_action('woocommerce_store_api_checkout_update_order_meta', [$this, 'update_order_meta']);
 
             // Filters.
             add_filter('woocommerce_settings_api_sanitized_fields_' . $this->id, [$this, 'sanitize_settings']);
@@ -91,7 +100,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                     'title' => __('Process orders with status', 'woocommerce-referralcandy'),
                     'type' => 'select',
                     'options' => wc_get_order_statuses(),
-                    'description' => __('Orders with this status are sent to ReferralCandy', 'woocommerce-referralcandy'),
+                    'description' => __('Orders with this status are sent to ReferralCandy.', 'woocommerce-referralcandy'),
                     'desc_tip' => true,
                     'default' => 'wc-completed'
                 ],
@@ -99,14 +108,14 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                     'title' => __('Render tracking code on', 'woocommerce-referralcandy'),
                     'type' => 'select',
                     'options' => $tracking_page_options,
-                    'description' => __('Render the tracking code on the selected pages', 'woocommerce-referralcandy'),
+                    'description' => __('Render the tracking code on the selected page.', 'woocommerce-referralcandy'),
                     'desc_tip' => true,
                     'default' => 'checkout'
                 ],
                 'enable_marketing_checkbox' => [
                     'title' => __('Enable accepts marketing checkbox on checkout', 'woocommerce-referralcandy'),
                     'type' => 'checkbox',
-                    'description' => __('Switch on/off the additional accepts marketing checkbox on checkout.<br>NOTE: Turning this off would mark all customers as unsubscribed upon checkout by default', 'woocommerce-referralcandy'),
+                    'description' => __('Shows/hides the accepts marketing checkbox on the checkout page.<br>NOTE: Turning this off would mark all customers as unsubscribed upon checkout by default.', 'woocommerce-referralcandy'),
                     'desc_tip' => true,
                     'default' => 'yes'
                 ],
@@ -114,13 +123,13 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                     'title' => __('Accepts marketing checkbox label', 'woocommerce-referralcandy'),
                     'type' => 'text',
                     'css' => 'width: 50%',
-                    'description' => __('Render the tracking code on the selected pages', 'woocommerce-referralcandy'),
+                    'description' => __('Modify the accepts marketing checkbox label on the checkout page.', 'woocommerce-referralcandy'),
                     'desc_tip' => true,
-                    'default' => 'I would like to receive referral marketing and promotional emails'
+                    'default' => 'I would like to receive referral marketing and promotional emails.'
                 ],
                 'popup' => [
                     'title' => __('Post-purchase Popup', 'woocommerce-referralcandy'),
-                    'label' => __('Enable post-purchase Popup', 'woocommerce-referralcandy'),
+                    'label' => __('Enable post-purchase popup', 'woocommerce-referralcandy'),
                     'type' => 'checkbox',
                     'desc_tip' => false,
                     'default' => 'no'
@@ -128,8 +137,8 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 'popup_quickfix' => [
                     'title' => __('Post-purchase Popup Quickfix', 'woocommerce-referralcandy'),
                     'label' => __(
-                        'Popup is breaking the checkout page?
-                        Try enabling this option to apply the quickfix!',
+                        'Is the post-purchase popup breaking the checkout page?
+                        Try enabling this option to apply a quickfix.',
                         'woocommerce-referralcandy'
                     ),
                     'type' => 'checkbox',
@@ -149,27 +158,33 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             return $this->get_option($option_name) == 'yes' ? true : false;
         }
 
-        public function render_accepts_marketing_field($checkout)
+        public function render_accepts_marketing_field()
         {
+            if (!function_exists('woocommerce_register_additional_checkout_field')) {
+                return;
+            }
+
             if ($this->is_option_enabled('enable_marketing_checkbox') == true) {
-                echo "<div style='width: 100%;'>";
-                woocommerce_form_field('rc_accepts_marketing', array(
-                    'type' => 'checkbox',
-                    'label' => $this->get_option('accepts_marketing_label'),
-                    'required' => false,
-                ), false);
-                echo "</div>";
+                woocommerce_register_additional_checkout_field(
+                    array(
+                        'id'       =>  $this->accepts_marketing_field_id,
+                        'label'    =>  $this->get_option('accepts_marketing_label'),
+                        'location' => 'contact',
+                        'type'     => 'checkbox',
+                    )
+                );
             }
         }
 
-        public function update_order_meta($order_id)
+        public function update_order_meta($order)
         {
+            $checkout_fields = Package::container()->get( CheckoutFields::class );
+            $rc_accepts_marketing_field = $checkout_fields->get_field_from_object($this->accepts_marketing_field_id, $order);
             if (OrderUtil::custom_orders_table_usage_is_enabled()) {
-                $order = wc_get_order($order_id);
-                if (!empty($_POST['rc_accepts_marketing'])) {
-                    $order->update_meta_data('rc_accepts_marketing', sanitize_text_field($_POST['rc_accepts_marketing']));
+                if (!empty($rc_accepts_marketing_field)) {
+                    $order->update_meta_data('rc_accepts_marketing', $rc_accepts_marketing_field);
                 }
-                if (is_admin() == false) {
+                if (!is_admin()) {
                     // set order locale
                     $order->update_meta_data('rc_loc', $this->get_current_locale());
 
@@ -181,8 +196,8 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 $order->save();
 
             } else {
-                if (!empty($_POST['rc_accepts_marketing'])) {
-                    update_post_meta($order_id, 'rc_accepts_marketing', sanitize_text_field($_POST['rc_accepts_marketing']));
+                if (!empty($rc_accepts_marketing_field)) {
+                    update_post_meta($order->id, 'rc_accepts_marketing', $rc_accepts_marketing_field);
                 }
             }
         }
@@ -194,7 +209,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             $keys_to_check = [
                 'API Access ID' => $this->api_id,
                 'App ID' => $this->app_id,
-                'Secret Key' => $this->secret_key
+                'Secret Key' => $this->secret_key,
             ];
 
             foreach ($keys_to_check as $key => $value) {
@@ -223,13 +238,13 @@ if (!class_exists('WC_Referralcandy_Integration')) {
         public function add_order_meta_data($post_id)
         {
             try {
-                if (in_array(get_post($post_id)->post_type, ['shop_order', 'shop_subscription'])) {
-                    // prevent admin cookies from automatically adding a referrer_id; this can be done manually though
-                    if (is_admin() == false) {
-                        // set order locale
+                if (in_array(get_post($post_id)->post_type, ['shop_order', 'shop_subscription'])) {   
+                    // Prevent admin cookies from automatically adding a referrer_id; this can be done manually though
+                    if (!is_admin()) {
+                        // Set order locale
                         update_post_meta($post_id, 'rc_loc', $this->get_current_locale());
 
-                        // set order referrer
+                        // Set order referrer
                         if (isset($_COOKIE['rc_referrer_id'])) {
                             update_post_meta($post_id, 'rc_aic', $_COOKIE['rc_referrer_id']);
                         }

@@ -1,0 +1,10 @@
+{
+    "scripts": {
+        "start": "wp-env start",
+        "stop": "wp-env stop",
+        "destroy": "wp-env destroy"
+    },
+    "devDependencies": {
+        "@wordpress/env": "^10.3.0"
+    }
+}
