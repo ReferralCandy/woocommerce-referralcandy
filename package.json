@@ -1,6 +1,7 @@
 {
     "scripts": {
         "start": "wp-env start",
+        "start:xdebug": "wp-env start --xdebug",
         "stop": "wp-env stop",
         "destroy": "wp-env destroy"
     },
