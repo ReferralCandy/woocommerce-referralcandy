@@ -64,6 +64,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             add_action('woocommerce_order_status_' . $this->status_to, [$this, 'rc_submit_purchase'], 10, 1);
             add_action('woocommerce_init', [$this, 'render_accepts_marketing_field']);
             add_action('woocommerce_store_api_checkout_update_order_meta', [$this, 'update_order_meta']);
+            add_action('admin_footer', [$this, 'dynamic_toggle_post_purchase_popup_campaign_key_field']);
 
             // Filters.
             add_filter('woocommerce_settings_api_sanitized_fields_' . $this->id, [$this, 'sanitize_settings']);
@@ -76,6 +77,17 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             foreach ($published_pages as $page) {
                 $tracking_page_options[$page->post_name] = $page->post_title;
             }
+
+            $popup_tooltip_content = '
+                <h4>' . __('What is campaign key?', 'woocommerce-referralcandy') . '</h4>
+                <p>' . __('This enables the correct campaign to display in the popup, replacing any other campaign currently shown.', 'woocommerce-referralcandy') . '</p>
+                <h4>' . __('Where to find this?', 'woocommerce-referralcandy') . '</h4>
+                <ol>
+                    <li>' . __('Go to ReferralCandy dashboard', 'woocommerce-referralcandy') . '</li>
+                    <li>' . __('Go to Campaigns > Select campaign name > Widgets > Post-purchase Popup', 'woocommerce-referralcandy') . '</li>
+                    <li>' . __('Go to Woocommerce integration > Copy Campaign Key', 'woocommerce-referralcandy') . '</li>
+                </ol>
+            ';
 
             $this->form_fields = [
                 'api_id' => [
@@ -129,10 +141,18 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 ],
                 'popup' => [
                     'title' => __('Post-purchase Popup', 'woocommerce-referralcandy'),
-                    'label' => __('Enable post-purchase popup', 'woocommerce-referralcandy'),
+                    'label' => __('Enable at checkout', 'woocommerce-referralcandy'),
                     'type' => 'checkbox',
                     'desc_tip' => false,
                     'default' => 'no'
+                ],
+                'popup_campaign_key' => [
+                    'type' => 'text',
+                    'placeholder' => __('Paste campaign key', 'woocommerce-referralcandy'),
+                    'desc_tip' => true,
+                    'description' => $popup_tooltip_content,
+                    'default' => '',
+                    'class' => 'popup-campaign-key-field'
                 ],
                 'popup_quickfix' => [
                     'title' => __('Post-purchase Popup Quickfix', 'woocommerce-referralcandy'),
@@ -146,6 +166,99 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                     'default' => 'no'
                 ]
             ];
+        }
+
+        public function dynamic_toggle_post_purchase_popup_campaign_key_field()
+        {
+            ?>
+            <script>
+                jQuery(document).ready(function ($) {
+                    var $popupCheckbox = $('#woocommerce_referralcandy_popup');
+                    var $popupCampaignKeyField = $('.popup-campaign-key-field');
+                    var tooltipContent = <?php echo json_encode($this->form_fields['popup_campaign_key']['description']); ?>;
+
+                    function toggleCampaignKeyField() {
+                        if ($popupCheckbox.is(':checked')) {
+                            $popupCampaignKeyField.closest('.popup-campaign-key-wrapper').show();
+                        } else {
+                            $popupCampaignKeyField.closest('.popup-campaign-key-wrapper').hide();
+                            $popupCampaignKeyField.val('');
+                        }
+                    }
+
+                    $popupCheckbox.on('change', toggleCampaignKeyField);
+
+                    // Move campaign key field below the checkbox
+                    $popupCampaignKeyField.closest('tr').hide();
+                    $popupCheckbox.closest('td').append('<div class="popup-campaign-key-wrapper"><div class="popup-campaign-key-inner"></div></div>');
+                    $('.popup-campaign-key-inner').append($popupCampaignKeyField);
+
+                    // Add tooltip icon inside the campaign key field
+                    $popupCampaignKeyField.after('<span class="popup-campaign-key-tooltip dashicons dashicons-editor-help"></span>');
+
+                    // Initialize tooltip
+                    $('.popup-campaign-key-tooltip').tipTip({
+                        content: tooltipContent,
+                        fadeIn: 50,
+                        fadeOut: 50,
+                        delay: 200,
+                        maxWidth: '300px'
+                    });
+
+                    toggleCampaignKeyField();
+                });
+            </script>
+            <style>
+                .popup-campaign-key-inner {
+                    position: relative;
+                    display: inline-block;
+                }
+
+                .popup-campaign-key-field {
+                    width: 300px;
+                    padding-right: 25px;
+                }
+
+                .popup-campaign-key-field::placeholder {
+                    color: #999;
+                    opacity: 0.6;
+                }
+                .popup-campaign-key-tooltip {
+                    position: absolute;
+                    right: 5px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    cursor: help;
+                }
+
+                #tiptip_content {
+                    text-align: left;
+                    max-width: 300px;
+                    white-space: normal;
+                    font-size: 12px;
+                    line-height: 1.4;
+                }
+
+                #tiptip_content h4 {
+                    margin: 0 0 5px;
+                    font-size: 14px;
+                    font-weight: bold;
+                }
+
+                #tiptip_content p {
+                    margin: 0 0 10px;
+                }
+
+                #tiptip_content ol {
+                    margin: 0;
+                    padding-left: 20px;
+                }
+
+                #tiptip_content li {
+                    margin-bottom: 5px;
+                }
+            </style>
+            <?php
         }
 
         public function sanitize_settings($settings)
@@ -244,6 +357,11 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 $message .= "<br> - Store TimeZone (i.e. Asia/Singapore)";
             }
 
+            if($this->is_option_enabled('popup') && empty($this->get_option('popup_campaign_key'))) {
+                $integration_incomplete = true;
+                $message .= "<br> - Popup Campaign Key";
+            }
+
             $valid_statuses = array_keys(wc_get_order_statuses());
             if (!in_array($this->get_option('order_status'), $valid_statuses)) {
                 $integration_incomplete = true;
@@ -320,21 +438,35 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             return $locale;
         }
 
+        private function get_post_purchase_popup_html($rc_order, $campaign_key = null)
+{
+            $data_id_type = !empty($campaign_key) ? "data-id-type=campaign" : "data-id-type=client";
+            $data_id = !empty($campaign_key) ? $campaign_key : $rc_order->api_id;
+
+            return "<div
+                    id='refcandy-lollipop'
+                    data-id='$data_id'
+                    data-fname='$rc_order->first_name'
+                    data-lname='$rc_order->last_name'
+                    data-email='$rc_order->email'
+                    data-locale='" . $this->get_current_locale() . "'
+                    data-accepts-marketing='$rc_order->accepts_marketing'
+                    data-amount='$rc_order->total'
+                    data-currency='$rc_order->currency'
+                    data-external-reference-id='$rc_order->order_number'
+                    data-timestamp='$rc_order->order_timestamp'
+                    $data_id_type
+                    ></div><style>iframe[src*='portal.referralcandy.com']{ height: 100% !important; }</style>";
+        }
+
         public function render_post_purchase_popup($order_id)
         {
             if (isset($order_id)) {
                 $rc_order = new RC_Order($order_id, $this);
                 $order = new WC_Order($order_id);
+                $campaign_key = $this->get_option('popup_campaign_key');
 
-                $div = "<div
-                        id='refcandy-lollipop'
-                        data-id='$rc_order->api_id'
-                        data-fname='$rc_order->first_name'
-                        data-lname='$rc_order->last_name'
-                        data-email='$rc_order->email'
-                        data-locale='" . $this->get_current_locale() . "'
-                        data-accepts-marketing='$rc_order->accepts_marketing'
-                        ></div><style>iframe[src*='portal.referralcandy.com']{ height: 100% !important; }</style>";
+                $div = $this->get_post_purchase_popup_html($rc_order, $campaign_key);
 
                 $popup_script = '<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.defer=true;js.src="//portal.referralcandy.com/assets/widgets/refcandy-lollipop.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","refcandy-lollipop-js");</script>';
 
