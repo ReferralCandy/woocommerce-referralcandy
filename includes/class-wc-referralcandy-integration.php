@@ -170,6 +170,16 @@ if (!class_exists('WC_Referralcandy_Integration')) {
 
         public function dynamic_toggle_post_purchase_popup_campaign_key_field()
         {
+            // Ensure the script and styles are only added on the WooCommerce ReferralCandy settings page.
+            if ( get_current_screen()->base !== 'woocommerce_page_wc-settings' ) {
+                return;
+            }
+            if ( ! isset($_GET['page'], $_GET['section']) ||
+                $_GET['page'] !== 'wc-settings' ||
+                $_GET['section'] !== 'referralcandy'
+            ) {
+                return;
+            }
             ?>
             <script>
                 jQuery(document).ready(function ($) {
