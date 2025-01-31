@@ -88,6 +88,9 @@ We maintain a list of FAQs on our [help page](https://help.referralcandy.com/)!
 
 == Changelog ==
 
+= 2.5.3 =
+* Update readme.txt
+
 = 2.5.2 =
 * Introduce new field to allow users to select the campaign to be used for post-purchase popup
 * Fix issue where the post-purchase popup is not displayed on the checkout page
