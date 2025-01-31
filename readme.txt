@@ -13,35 +13,52 @@ Drive sales and customer loyalty with ReferralCandy. Set up effective referral a
 
 == Description ==
 
-[ReferralCandy](http://www.referralcandy.com/) is a powerful tool allowing you to automate customer referral campaigns for your WooCommerce store.
+ReferralCandy – Boost Your Sales with Referrals and Affiliate Management
 
-* Get more sales from referrals
-* Reward customers for referring their friends to your store
-* Easy install. 14 day risk-free trial. Get up and running today!
+[ReferralCandy](http://www.referralcandy.com/) is a powerful tool that allows you to automate customer referral campaigns and now includes affiliate tracking and management features for your WooCommerce store.
 
-= Create a customer referral program for your brand and grow sales with referral and affiliate marketing =
+= Get More Sales with Referrals and Affiliate Management =
 
 ReferralCandy helps Woocommerce stores attract customers, increase sales and grow using the power of referral, affiliate marketing and rewards. Referral programs and affiliate programs allow you to retain customers and reward them when they refer their friends. Customers get a referral link they can share with friends to promote the brand. Referral and affiliate programs work for all industries: fashion, nutrition, electronics, home, pet and more.
 
-* Set up a referral or affiliate program and get the first sales within 30 minutes
-* Enable post-purchase popups, emails and pages to enroll customers in the program
-* Automate customer rewards: Cash and coupons for one-off and subscription sales
-* Customize your referral program with your logo, images and brand colors
-* Integrate with Klaviyo, ReCharge, Skio, Awtomic, Bold, Loop, Appstle, Stay, Seal
+1. Reward customers for referring their friends and affiliates for promoting your store.
+2. Easy to install. 14-day risk-free trial. Start today!
+3. Create a customer referral and affiliate management program to grow your sales with automated tracking and rewards.
 
-= Easily add a refer-a-friend program to your store =
+ReferralCandy helps WooCommerce stores attract new customers, increase sales, and grow through the power of referral and affiliate marketing. Customers and affiliates can easily share a personalized referral link to promote your brand. Referral and affiliate programs work across industries: fashion, nutrition, electronics, home, pet, and more.
 
-Simple to get up and running today -- no developers needed!
+= What’s New: Affiliate Tracking & Management =
+
+ReferralCandy now helps you manage affiliates alongside referrals, simplifying how you track and reward performance.
+
+1. Track affiliate contributions: Monitor sales, clicks, and conversions from your affiliate partners.
+2. Automate affiliate rewards: Easily issue payments via cash, coupons, or other rewards.
+3. Manage existing affiliates: No need for an affiliate network — invite and track your own partners.
+
+= Key Features =
+
+1. Set up a referral or affiliate program and start generating sales in 30 minutes or less.
+2. Enable post-purchase popups, emails, and landing pages to recruit customers and affiliates into your program.
+3. Automate rewards: Offer cash, coupons, or discounts for successful referrals and affiliate-driven sales.
+4. Customize your referral and affiliate program with your brand’s logo, colors, and imagery.
+5. Integrate with tools like Klaviyo, ReCharge, Skio, Awtomic, Bold, Loop, Appstle, Stay, and Seal.
+6. Easily add a refer-a-friend and affiliate management program to your store — no developers needed!
 
 = How ReferralCandy works: =
 
-* A customer buys something from your store
-* We send them a coupon code to share with friends
-* When their friends buy from you, the customer receives a referral reward
+A customer or affiliate shares their personalized referral link.
+Their friends or audience make a purchase using the shared link.
+The referrer or affiliate earns a reward for every successful referral.
 
-Everybody wins: your original customer gets rewarded, their friends get a discount, you make more sales and get a new customer! We do all the referral tracking, so you don't have to do anything.
+= Everybody wins =
 
-Learn about the details on our [How ReferralCandy Works](http://www.referralcandy.com/how-it-works) page.
+1. Customers and affiliates get rewarded.
+2. Friends and audiences enjoy discounts.
+3. You grow sales and acquire new customers.
+
+ReferralCandy tracks and manages all referral and affiliate activity seamlessly, so you don’t have to worry about the details.
+
+Learn about the details on our [How ReferralCandy Works](https://www.referralcandy.com/how-it-works) page.
 
 https://www.youtube.com/watch?v=arlElJkyGwc
 
