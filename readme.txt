@@ -22,7 +22,7 @@ ReferralCandy – Boost Your Sales with Referrals and Affiliate Management
 ReferralCandy helps Woocommerce stores attract customers, increase sales and grow using the power of referral, affiliate marketing and rewards. Referral programs and affiliate programs allow you to retain customers and reward them when they refer their friends. Customers get a referral link they can share with friends to promote the brand. Referral and affiliate programs work for all industries: fashion, nutrition, electronics, home, pet and more.
 
 1. Reward customers for referring their friends and affiliates for promoting your store.
-2. Easy to install. 14-day risk-free trial. Start today!
+2. Easy to install. 7-day risk-free trial. Start today!
 3. Create a customer referral and affiliate management program to grow your sales with automated tracking and rewards.
 
 ReferralCandy helps WooCommerce stores attract new customers, increase sales, and grow through the power of referral and affiliate marketing. Customers and affiliates can easily share a personalized referral link to promote your brand. Referral and affiliate programs work across industries: fashion, nutrition, electronics, home, pet, and more.
