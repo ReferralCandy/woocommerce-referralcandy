@@ -33,8 +33,8 @@ class RC_Order {
 
         if ($this->wc_pre_30) {
             $this->order_timestamp = time();
-            if (get_option('timezone_string') != null) {
-                $timezone_string = get_option('timezone_string');
+            $timezone_string = wp_timezone_string();
+            if (!empty($timezone_string)) {
                 $this->order_timestamp = DateTime::createFromFormat('Y-m-d H:i:s', $this->order->order_date, new DateTimeZone($timezone_string))->getTimestamp();
             }
 

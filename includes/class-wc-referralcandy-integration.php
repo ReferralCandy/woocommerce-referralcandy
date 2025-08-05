@@ -351,8 +351,9 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                     $message .= "<br> - $key";
                 }
             }
-
-            if (get_option('timezone_string') == null) {
+            
+            $timezone_string = wp_timezone_string();
+            if (empty($timezone_string)) {
                 $integration_incomplete = true;
                 $message .= "<br> - Store TimeZone (i.e. Asia/Singapore)";
             }
