@@ -1,0 +1,24 @@
+name: Deploy to WordPress.org
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  deploy:
+    name: Deploy plugin to SVN
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to WordPress.org Plugin Directory
+        uses: 10up/action-wordpress-plugin-deploy@stable
+        with:
+          dry-run: true
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: referralcandy-for-woocommerce
+          ASSETS_DIR: assets

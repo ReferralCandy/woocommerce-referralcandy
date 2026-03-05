@@ -6,9 +6,6 @@
  * @category Integration
  * @author   ReferralCandy
  */
-use Automattic\WooCommerce\Utilities\OrderUtil;
-use Automattic\WooCommerce\Blocks\Package;
-use Automattic\WooCommerce\Blocks\Domain\Services\CheckoutFields;
 
 if (!defined('ABSPATH')) {
     die('Direct access is prohibited.');
@@ -59,10 +56,11 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             add_action('admin_notices', [$this, 'check_plugin_requirements']);
             add_action('init', [$this, 'rc_set_referrer_cookie']);
             add_action('wp_enqueue_scripts', [$this, 'render_tracking_code']);
-            add_action('save_post', [$this, 'add_order_meta_data']);
+            add_action('woocommerce_checkout_create_order', [$this, 'add_order_meta_classic'], 10, 1);
             add_action('woocommerce_thankyou', [$this, 'render_post_purchase_popup']);
             add_action('woocommerce_order_status_' . $this->status_to, [$this, 'rc_submit_purchase'], 10, 1);
             add_action('woocommerce_init', [$this, 'render_accepts_marketing_field']);
+            add_action('wp_enqueue_scripts', [$this, 'enqueue_classic_accepts_marketing_script']);
             add_action('woocommerce_store_api_checkout_update_order_meta', [$this, 'update_order_meta']);
             add_action('admin_footer', [$this, 'dynamic_toggle_post_purchase_popup_campaign_key_field']);
 
@@ -289,50 +287,101 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             }
         }
 
-        private function remove_accepts_marketing_metadata($order, $type)
+        /**
+         * Injects the accepts marketing checkbox via JavaScript on classic checkout pages.
+         *
+         * PHP hook approaches are template-specific and break across different checkout plugins
+         * (CartFlows, FunnelKit, Fluid Checkout, etc.). JS injection using #place_order as the
+         * anchor is universally compatible: every WooCommerce checkout plugin renders a #place_order
+         * button inside the <form>, so the injected checkbox is always submitted with the order.
+         *
+         * The handler re-runs on updated_checkout to survive WooCommerce's AJAX order review
+         * refreshes, preserving the checked state across updates.
+         *
+         * Block checkout uses render_accepts_marketing_field() instead and is unaffected.
+         */
+        public function enqueue_classic_accepts_marketing_script()
         {
-            $order_meta_data = $order->get_meta_data();
-            $meta_keys_to_remove = ['rc_accepts_marketing'];
-
-            foreach ($order_meta_data as $meta_data) {
-                if (in_array($meta_data->key, $meta_keys_to_remove)) {
-                    if ($type == 'post') {
-                        delete_post_meta($order->get_id(), $meta_data->key);
-                    } else if ($type == 'order') {
-                        $order->delete_meta_data($meta_data->key);
-                    }
-                }
+            if (!is_checkout() || is_order_received_page()) {
+                return;
             }
+
+            if (!$this->is_option_enabled('enable_marketing_checkbox')) {
+                return;
+            }
+
+            $field_html = '<p class="form-row form-row-wide" id="rc_accepts_marketing_field">' .
+                '<label class="woocommerce-form__label woocommerce-form__label-for-checkbox checkbox">' .
+                '<input type="checkbox" name="rc_accepts_marketing" id="rc_accepts_marketing" value="1" ' .
+                'class="woocommerce-form__input woocommerce-form__input-checkbox input-checkbox"> ' .
+                '<span>' . esc_html($this->get_option('accepts_marketing_label')) . '</span>' .
+                '</label></p>';
+
+            wp_register_script('rc-accepts-marketing', false, ['jquery'], null, true);
+            wp_enqueue_script('rc-accepts-marketing');
+            wp_add_inline_script('rc-accepts-marketing', sprintf(
+                '(function($){
+                    var fieldHtml = %s;
+                    function rcInjectMarketingCheckbox() {
+                        var wasChecked = $("#rc_accepts_marketing").is(":checked");
+                        $("#rc_accepts_marketing_field").remove();
+                        var $btn = $("#place_order");
+                        if (!$btn.length) return;
+                        $btn.before(fieldHtml);
+                        if (wasChecked) $("#rc_accepts_marketing").prop("checked", true);
+                    }
+                    $(document).ready(rcInjectMarketingCheckbox);
+                    $(document.body).on("updated_checkout", rcInjectMarketingCheckbox);
+                })(jQuery);',
+                wp_json_encode($field_html)
+            ));
         }
 
-        public function update_order_meta($order)
+        /**
+         * Retrieves the accepts-marketing field value from a Block Checkout order.
+         * Uses the WooCommerce Blocks CheckoutFields service when available,
+         * with a direct meta fallback for forward/backward compatibility.
+         */
+        private function get_block_checkout_accepts_marketing($order)
         {
-            $checkout_fields = Package::container()->get( CheckoutFields::class );
-            $rc_accepts_marketing_field = $checkout_fields->get_field_from_object($this->accepts_marketing_field_id, $order);
-
-            if (OrderUtil::custom_orders_table_usage_is_enabled()) {
-                // If order in param contains accepts marketing metadata field, remove them, its presence indicates truthy
-                $this->remove_accepts_marketing_metadata($order, 'order');
-                if (!empty($rc_accepts_marketing_field)) {
-                    $order->update_meta_data('rc_accepts_marketing', $rc_accepts_marketing_field);
-                }
-                if (!is_admin()) {
-                    // set order locale
-                    $order->update_meta_data('rc_loc', $this->get_current_locale());
-
-                    // set order referrer
-                    if (isset($_COOKIE['rc_referrer_id'])) {
-                        $order->update_meta_data('rc_aic', $_COOKIE['rc_referrer_id']);
-                    }
-                }
-                $order->save();
-            } else {
-                // If order in param contains accepts marketing metadata field, remove them, its presence indicates truthy
-                $this->remove_accepts_marketing_metadata($order, 'post');
-                if (!empty($rc_accepts_marketing_field)) {
-                    update_post_meta($order->get_id(), 'rc_accepts_marketing', $rc_accepts_marketing_field);
+            if (
+                class_exists('Automattic\WooCommerce\Blocks\Domain\Services\CheckoutFields') &&
+                class_exists('Automattic\WooCommerce\Blocks\Package')
+            ) {
+                try {
+                    $checkout_fields = \Automattic\WooCommerce\Blocks\Package::container()
+                        ->get(\Automattic\WooCommerce\Blocks\Domain\Services\CheckoutFields::class);
+                    return $checkout_fields->get_field_from_object($this->accepts_marketing_field_id, $order);
+                } catch (\Exception $e) {
+                    // Fall through to direct meta read
                 }
             }
+
+            return $order->get_meta($this->accepts_marketing_field_id);
+        }
+
+        /**
+         * Saves order meta for Block Checkout orders via the Store API.
+         * Uses WC_Order API throughout so it works with both HPOS and classic post-meta storage.
+         */
+        public function update_order_meta($order)
+        {
+            $accepts_marketing = $this->get_block_checkout_accepts_marketing($order);
+
+            $order->delete_meta_data('rc_accepts_marketing');
+            if (!empty($accepts_marketing)) {
+                $order->update_meta_data('rc_accepts_marketing', $accepts_marketing);
+            }
+
+            if (!is_admin()) {
+                $order->update_meta_data('rc_loc', $this->get_current_locale());
+
+                if (isset($_COOKIE['rc_referrer_id'])) {
+                    $order->update_meta_data('rc_aic', sanitize_text_field($_COOKIE['rc_referrer_id']));
+                }
+            }
+
+            $order->save();
         }
 
         public function check_plugin_requirements()
@@ -351,7 +400,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                     $message .= "<br> - $key";
                 }
             }
-            
+
             $timezone_string = wp_timezone_string();
             if (empty($timezone_string)) {
                 $integration_incomplete = true;
@@ -374,23 +423,27 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             }
         }
 
-        public function add_order_meta_data($post_id)
+        /**
+         * Saves locale, referrer, and accepts-marketing meta for classic (shortcode) checkout orders.
+         * Fires via woocommerce_checkout_create_order, which:
+         *   - only fires for the classic checkout flow (not Block Checkout Store API)
+         *   - passes a WC_Order object that works with both HPOS and classic post-meta storage
+         *   - does not require a manual $order->save() call (WooCommerce handles that)
+         */
+        public function add_order_meta_classic($order)
         {
-            try {
-                if (in_array(get_post($post_id)->post_type, ['shop_order', 'shop_subscription'])) {   
-                    // Prevent admin cookies from automatically adding a referrer_id; this can be done manually though
-                    if (!is_admin()) {
-                        // Set order locale
-                        update_post_meta($post_id, 'rc_loc', $this->get_current_locale());
+            if (is_admin()) {
+                return;
+            }
 
-                        // Set order referrer
-                        if (isset($_COOKIE['rc_referrer_id'])) {
-                            update_post_meta($post_id, 'rc_aic', $_COOKIE['rc_referrer_id']);
-                        }
-                    }
-                }
-            } catch (Exception $e) {
-                error_log($e);
+            $order->update_meta_data('rc_loc', $this->get_current_locale());
+
+            if (isset($_COOKIE['rc_referrer_id'])) {
+                $order->update_meta_data('rc_aic', sanitize_text_field($_COOKIE['rc_referrer_id']));
+            }
+
+            if ($this->is_option_enabled('enable_marketing_checkbox') && !empty($_POST['rc_accepts_marketing'])) {
+                $order->update_meta_data('rc_accepts_marketing', '1');
             }
         }
 
@@ -402,7 +455,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
 
         public function render_tracking_code()
         {
-            $shouldRenderTrackingCode = is_order_received_page() || (is_order_received_page() && is_page($this->tracking_page));
+            $shouldRenderTrackingCode = is_order_received_page() || is_page($this->tracking_page);
             if ($shouldRenderTrackingCode) {
                 $tracking_code = '<script async type="text/javascript">
                     !function(d,s) { var rc = "//go.referralcandy.com/purchase/' . $this->app_id . '.js";
@@ -440,7 +493,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
         }
 
         private function get_post_purchase_popup_html($rc_order, $campaign_key = null)
-{
+        {
             $data_id_type = !empty($campaign_key) ? "data-id-type=campaign" : "data-id-type=client";
             $data_id = !empty($campaign_key) ? $campaign_key : $rc_order->api_id;
 
@@ -484,11 +537,15 @@ if (!class_exists('WC_Referralcandy_Integration')) {
 
         public function rc_set_referrer_cookie()
         {
+            if (headers_sent()) {
+                return;
+            }
+
             $days_to_keep_cookies = 28;
 
             if (isset($_GET['aic']) && $_GET['aic'] !== null) {
                 $cookie_domain = preg_replace('/(http||https):\/\/(www\.)?/', '.', get_bloginfo('url'));
-                setcookie('rc_referrer_id', $_GET['aic'], time() + (86400 * $days_to_keep_cookies), '/', $cookie_domain);
+                setcookie('rc_referrer_id', sanitize_text_field($_GET['aic']), time() + (86400 * $days_to_keep_cookies), '/', $cookie_domain);
             }
         }
     }
