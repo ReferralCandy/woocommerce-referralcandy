@@ -1,5 +1,6 @@
 .distignore
 .git
+.gitignore
 .github
 .wp-env.json
 .DS_Store
