@@ -1,0 +1,10 @@
+.distignore
+.git
+.github
+.wp-env.json
+.DS_Store
+assets
+node_modules
+package.json
+pnpm-lock.yaml
+README.md
