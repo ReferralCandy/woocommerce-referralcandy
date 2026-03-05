@@ -6,10 +6,10 @@
  * Author: ReferralCandy
  * Author URI: http://www.referralcandy.com
  * Text Domain: woocommerce-referralcandy
- * Version: 2.5.3
+ * Version: 2.5.5
  * Requires at least: 6.4
  * Requires PHP: 7.4
- * Tested up to: 6.6
+ * Tested up to: 6.9.1
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,24 @@ if (!defined('ABSPATH')) {
     die('Direct access is prohibited.');
 }
 
-if (preg_grep("/\/woocommerce.php$/", apply_filters('active_plugins', get_option('active_plugins'))) !== null) {
+function wc_referralcandy_is_woocommerce_active()
+{
+    $active_plugins = apply_filters('active_plugins', get_option('active_plugins', []));
+    if (in_array('woocommerce/woocommerce.php', $active_plugins)) {
+        return true;
+    }
+
+    if (is_multisite()) {
+        $network_plugins = array_keys(get_site_option('active_sitewide_plugins', []));
+        if (in_array('woocommerce/woocommerce.php', $network_plugins)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+if (wc_referralcandy_is_woocommerce_active()) {
     if (!class_exists('WC_Referralcandy')) {
         class WC_Referralcandy
         {
