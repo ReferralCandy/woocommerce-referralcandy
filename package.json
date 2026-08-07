@@ -2,6 +2,8 @@
     "scripts": {
         "start": "wp-env start",
         "start:xdebug": "wp-env start --xdebug",
+        "tunnel": "node scripts/tunnel.mjs",
+        "dev": "pnpm run start && wp-env run cli wp rewrite flush --hard && pnpm run tunnel",
         "stop": "wp-env stop",
         "destroy": "wp-env destroy"
     },

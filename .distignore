@@ -3,9 +3,13 @@
 .gitignore
 .github
 .wp-env.json
+.wp-env.override.json
 .DS_Store
 assets
+dev
+docs
 node_modules
 package.json
 pnpm-lock.yaml
+scripts
 README.md
