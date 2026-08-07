@@ -15,3 +15,5 @@ sitemap.xml.gz
 node_modules
 .vscode
 .DS_Store
+.wp-env.override.json
+dev/mu-plugins/.tunnel-host
