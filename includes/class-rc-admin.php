@@ -2,7 +2,11 @@
 /**
  * WooCommerce ReferralCandy Integration.
  *
- * wc-admin settings page (React) and the REST route that backs it.
+ * Full-screen admin app (React) and the REST route that backs it.
+ *
+ * The plugin gets its own top-level menu. On that screen the WordPress admin chrome
+ * (admin bar, menu, footer, notices) is hidden with CSS and the React app fills the
+ * viewport with its own sidebar; "Back to WP Admin" in the app leads out again.
  *
  * @package  RC_Admin
  * @category Integration
@@ -16,49 +20,67 @@ if (!defined('ABSPATH')) {
 if (!class_exists('RC_Admin')) {
     class RC_Admin
     {
-        // Deliberately shared between production and a staging copy: the bundle is identical and
-        // registers every page config pushed to window.wcReferralCandyPages.
         const SCRIPT_HANDLE = 'wc-referralcandy-admin';
+        const ROOT_ID = 'wc-referralcandy-admin-root';
+        const BODY_CLASS = 'wc-referralcandy-fullscreen';
+        const CAPABILITY = 'manage_woocommerce';
+
+        /** @var string Hook suffix (= screen id) returned by add_menu_page(). */
+        private $hook_suffix = '';
+
+        public function __construct()
+        {
+            add_action('admin_menu', [$this, 'register_menu']);
+            add_action('admin_enqueue_scripts', [$this, 'enqueue']);
+            add_filter('admin_body_class', [$this, 'admin_body_class']);
+            add_action('admin_head', [$this, 'hide_admin_chrome']);
+            add_action('rest_api_init', [$this, 'register_routes']);
+        }
 
         private function rest_namespace()
         {
             return WC_REFERRALCANDY_SLUG . '/v1';
         }
 
-        private function admin_path()
+        private function page_url($route = '')
         {
-            return '/' . WC_REFERRALCANDY_SLUG;
+            return 'admin.php?page=' . WC_REFERRALCANDY_SLUG . ($route ? '#' . $route : '');
         }
 
-        public function __construct()
+        public function register_menu()
         {
-            add_action('admin_menu', [$this, 'register_page']);
-            add_action('admin_enqueue_scripts', [$this, 'enqueue']);
-            add_action('rest_api_init', [$this, 'register_routes']);
+            $this->hook_suffix = add_menu_page(
+                WC_REFERRALCANDY_LABEL,
+                WC_REFERRALCANDY_LABEL,
+                self::CAPABILITY,
+                WC_REFERRALCANDY_SLUG,
+                [$this, 'render_page'],
+                'dashicons-megaphone',
+                56
+            );
+
+            // Same slug as the parent so it is the default landing item.
+            add_submenu_page(WC_REFERRALCANDY_SLUG, WC_REFERRALCANDY_LABEL, __('Overview', 'woocommerce-referralcandy'), self::CAPABILITY, WC_REFERRALCANDY_SLUG, [$this, 'render_page']);
+            // Deep links into the app's hash router.
+            add_submenu_page(WC_REFERRALCANDY_SLUG, __('Settings', 'woocommerce-referralcandy'), __('Settings', 'woocommerce-referralcandy'), self::CAPABILITY, $this->page_url('/settings'));
+            add_submenu_page(WC_REFERRALCANDY_SLUG, __('Help', 'woocommerce-referralcandy'), __('Help', 'woocommerce-referralcandy'), self::CAPABILITY, $this->page_url('/help'));
         }
 
-        public function register_page()
+        private function is_own_screen()
         {
-            if (!function_exists('wc_admin_register_page')) {
-                return;
-            }
+            $screen = function_exists('get_current_screen') ? get_current_screen() : null;
 
-            wc_admin_register_page([
-                'id'         => WC_REFERRALCANDY_ID,
-                'title'      => WC_REFERRALCANDY_LABEL,
-                'parent'     => 'woocommerce',
-                'path'       => $this->admin_path(),
-                'capability' => 'manage_woocommerce',
-                'nav_args'   => ['id' => WC_REFERRALCANDY_ID],
-            ]);
+            return $screen && $this->hook_suffix && $screen->id === $this->hook_suffix;
         }
 
-        public function enqueue()
+        public function render_page()
         {
-            if (
-                !class_exists('\Automattic\WooCommerce\Admin\PageController')
-                || !\Automattic\WooCommerce\Admin\PageController::is_admin_page()
-            ) {
+            printf('<div id="%s"></div>', esc_attr(self::ROOT_ID));
+        }
+
+        public function enqueue($hook)
+        {
+            if ($hook !== $this->hook_suffix) {
                 return;
             }
 
@@ -84,17 +106,18 @@ if (!class_exists('RC_Admin')) {
                 $asset['version'],
                 true
             );
+            wp_enqueue_style('wp-components');
+            if (file_exists($build_dir . 'style-index.css')) {
+                wp_enqueue_style(
+                    self::SCRIPT_HANDLE,
+                    plugins_url('build/style-index.css', WC_REFERRALCANDY_PLUGIN_FILE),
+                    ['wp-components'],
+                    $asset['version']
+                );
+            }
             wp_add_inline_script(
                 self::SCRIPT_HANDLE,
-                sprintf(
-                    '(window.wcReferralCandyPages = window.wcReferralCandyPages || []).push(%s);',
-                    wp_json_encode([
-                        'id'       => WC_REFERRALCANDY_ID,
-                        'title'    => WC_REFERRALCANDY_LABEL,
-                        'path'     => $this->admin_path(),
-                        'restPath' => '/' . $this->rest_namespace() . '/settings',
-                    ])
-                ),
+                'window.wcReferralCandyAdmin = ' . wp_json_encode($this->app_config()) . ';',
                 'before'
             );
             wp_set_script_translations(
@@ -102,13 +125,89 @@ if (!class_exists('RC_Admin')) {
                 'woocommerce-referralcandy',
                 plugin_dir_path(WC_REFERRALCANDY_PLUGIN_FILE) . 'languages'
             );
-            wp_enqueue_style('wp-components');
+        }
+
+        private function app_config()
+        {
+            $plugin = get_file_data(WC_REFERRALCANDY_PLUGIN_FILE, ['Version' => 'Version']);
+
+            return [
+                'rootId'   => self::ROOT_ID,
+                'id'       => WC_REFERRALCANDY_ID,
+                'title'    => WC_REFERRALCANDY_LABEL,
+                'version'  => $plugin['Version'],
+                'restPath' => '/' . $this->rest_namespace() . '/settings',
+                'adminUrl' => admin_url(),
+                'links'    => [
+                    'signup'      => 'https://my.referralcandy.com/signup?utm_source=woocommerce-plugin&utm_medium=plugin&utm_campaign=woocommerce-integration-signup',
+                    'integration' => 'https://my.referralcandy.com/integration',
+                    'dashboard'   => 'https://my.referralcandy.com/',
+                    'guide'       => 'https://www.referralcandy.com/blog/woocommerce-setup?utm_source=woocommerce-plugin&utm_medium=plugin&utm_campaign=woocommerce-integration-blog',
+                    'help'        => 'https://help.referralcandy.com/',
+                    'changelog'   => 'https://wordpress.org/plugins/referralcandy-for-woocommerce/#developers',
+                ],
+            ];
+        }
+
+        public function admin_body_class($classes)
+        {
+            if ($this->is_own_screen()) {
+                $classes .= ' ' . self::BODY_CLASS;
+            }
+
+            return $classes;
+        }
+
+        /**
+         * Hide the WordPress admin chrome on our screen so the app can fill the viewport.
+         * Everything is scoped to the body class, so other admin pages are untouched.
+         */
+        public function hide_admin_chrome()
+        {
+            if (!$this->is_own_screen()) {
+                return;
+            }
+
+            $body = 'body.' . self::BODY_CLASS;
+            $root = '#' . self::ROOT_ID;
+            ?>
+            <style>
+                <?php echo $body; ?> #wpadminbar,
+                <?php echo $body; ?> #adminmenumain,
+                <?php echo $body; ?> #wpfooter,
+                <?php echo $body; ?> #screen-meta,
+                <?php echo $body; ?> #screen-meta-links,
+                <?php echo $body; ?> .notice,
+                <?php echo $body; ?> .updated,
+                <?php echo $body; ?> .update-nag,
+                <?php echo $body; ?> .error,
+                <?php echo $body; ?> #wpbody-content > :not(<?php echo $root; ?>) {
+                    display: none !important;
+                }
+                <?php echo $body; ?> {
+                    background: #1e1e1e;
+                }
+                <?php echo $body; ?> #wpcontent {
+                    margin-left: 0 !important;
+                    padding-left: 0 !important;
+                }
+                <?php echo $body; ?> #wpbody-content {
+                    padding-bottom: 0 !important;
+                }
+                <?php echo $body; ?> <?php echo $root; ?> {
+                    position: fixed;
+                    inset: 0;
+                    z-index: 99999;
+                    overflow-y: auto;
+                }
+            </style>
+            <?php
         }
 
         public function register_routes()
         {
             $permission = function () {
-                return current_user_can('manage_woocommerce');
+                return current_user_can(self::CAPABILITY);
             };
 
             register_rest_route($this->rest_namespace(), '/settings', [
@@ -136,7 +235,7 @@ if (!class_exists('RC_Admin')) {
             return (array) get_option($this->integration()->get_option_key(), []);
         }
 
-        public function get_settings()
+        private function response($values)
         {
             $integration = $this->integration();
             $fields = [];
@@ -150,13 +249,18 @@ if (!class_exists('RC_Admin')) {
                 $fields[$key] = $field;
             }
 
-            $defaults = wp_list_pluck($integration->form_fields, 'default');
-
             return rest_ensure_response([
-                'values' => wp_parse_args($this->current_values(), $defaults),
+                'values' => $values,
                 'fields' => $fields,
-                'intro'  => wp_kses_post($integration->method_description),
+                'status' => $integration->get_requirement_checks(),
             ]);
+        }
+
+        public function get_settings()
+        {
+            $defaults = wp_list_pluck($this->integration()->form_fields, 'default');
+
+            return $this->response(wp_parse_args($this->current_values(), $defaults));
         }
 
         public function save_settings(WP_REST_Request $request)
@@ -180,8 +284,11 @@ if (!class_exists('RC_Admin')) {
             }
 
             update_option($integration->get_option_key(), $clean);
+            // Status checks read through get_option(), which caches the settings array in the
+            // integration; reload so the response reflects what was just saved.
+            $integration->init_settings();
 
-            return rest_ensure_response(['values' => $clean]);
+            return $this->response($clean);
         }
     }
 }

@@ -42,7 +42,7 @@ define('WC_REFERRALCANDY_PLUGIN_FILE', __FILE__);
 define('WC_REFERRALCANDY_MIN_WC', '9.0.1');
 define('WC_REFERRALCANDY_ID', 'referralcandy' . WC_REFERRALCANDY_SUFFIX);
 define('WC_REFERRALCANDY_SLUG', str_replace('_', '-', WC_REFERRALCANDY_ID));
-define('WC_REFERRALCANDY_ADMIN_URL', 'admin.php?page=wc-admin&path=/' . WC_REFERRALCANDY_SLUG);
+define('WC_REFERRALCANDY_ADMIN_URL', 'admin.php?page=' . WC_REFERRALCANDY_SLUG);
 
 if (!class_exists('WC_Referralcandy')) {
     class WC_Referralcandy

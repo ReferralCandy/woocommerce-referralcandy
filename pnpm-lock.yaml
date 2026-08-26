@@ -11,6 +11,9 @@ importers:
       '@wordpress/env':
         specifier: ^10.39.0
         version: 10.39.0(@types/node@20.19.43)(supports-color@8.1.1)
+      '@wordpress/icons':
+        specifier: ^15.4.0
+        version: 15.4.0(react-dom@19.2.8(react@18.3.1))(react@18.3.1)
       '@wordpress/scripts':
         specifier: ^34.1.0
         version: 34.1.0(@playwright/test@1.62.1)(@types/node@20.19.43)(@typescript-eslint/eslint-plugin@8.68.0(@typescript-eslint/parser@8.68.0(eslint@10.9.1(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3))(eslint@10.9.1(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3))(@typescript-eslint/parser@8.68.0(eslint@10.9.1(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3))(@wordpress/env@10.39.0(@types/node@20.19.43)(supports-color@8.1.1))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(react-dom@19.2.8(react@18.3.1))(react@18.3.1)(stylelint-scss@6.14.0(stylelint@16.26.1(supports-color@8.1.1)(typescript@6.0.3)))(supports-color@8.1.1)(type-fest@4.41.0)(typescript@6.0.3)
@@ -2481,6 +2484,16 @@ packages:
     engines: {node: '>=18.12.0', npm: '>=8.19.2'}
     hasBin: true
 
+  '@wordpress/icons@15.4.0':
+    resolution: {integrity: sha512-0NNoJkGZuFM4j60vdxzINXfUpMOGkoyPRqN0an6sRLoa6wHYuM4Yt4sZJet4xA6ft3z8+xNUvrAd92dF2tpFBg==}
+    engines: {node: '>=18.12.0', npm: '>=8.19.2'}
+    peerDependencies:
+      '@types/react': ^18 || ^19
+      react: ^18 || ^19
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+
   '@wordpress/is-shallow-equal@5.53.0':
     resolution: {integrity: sha512-NHhvEnqi82Vzon458Jz6nzmbAPWM1zy9k6rBXQTc+9PsRiWHWpqXqldKAeTFVrl0vspZf4PwmLlsxqP3ckCLWw==}
     engines: {node: '>=18.12.0', npm: '>=8.19.2'}
@@ -2524,6 +2537,16 @@ packages:
     engines: {node: '>=18.12.0', npm: '>=8.19.2'}
     peerDependencies:
       prettier: '>=3'
+
+  '@wordpress/primitives@4.53.0':
+    resolution: {integrity: sha512-yZdmql3vzzVhC0mcu5sKGMUXBrKGODQYZWvHsLwJMSSciFHvns/TyDloodID/naJZL243xUSN/hfKp7PIzXNRw==}
+    engines: {node: '>=18.12.0', npm: '>=8.19.2'}
+    peerDependencies:
+      '@types/react': ^18 || ^19
+      react: ^18 || ^19
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
 
   '@wordpress/priority-queue@3.53.0':
     resolution: {integrity: sha512-HQ5AatN1QWimFHQnhhhzrfgNoiVWTqwhUEv5326hhTnyUxvh5SOYxg46IBGow+zj/VJjIPyaxv1ftuqzVxgRMQ==}
@@ -3193,6 +3216,10 @@ packages:
   clone@1.0.4:
     resolution: {integrity: sha512-JQHZ2QMW6l3aH/j6xCqQThY/9OH4D/9ls34cgkUBiEeocRTU04tHfKPBsUK1PqZCUQM7GiA0IIXJSuXHI64Kbg==}
     engines: {node: '>=0.8'}
+
+  clsx@2.1.1:
+    resolution: {integrity: sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==}
+    engines: {node: '>=6'}
 
   co@4.6.0:
     resolution: {integrity: sha512-QVb0dM5HvG+uaxitm8wONl7jltx8dqhfU33DcqtOZcLSVIKSDDLDi7+0LbAKiyI8hD9u42m2YxXSkMGWThaecQ==}
@@ -10406,6 +10433,16 @@ snapshots:
       gettext-parser: 1.4.0
       tannin: 1.2.0
 
+  '@wordpress/icons@15.4.0(react-dom@19.2.8(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@wordpress/element': 8.5.0(react-dom@19.2.8(react@18.3.1))(react@18.3.1)
+      '@wordpress/primitives': 4.53.0(react-dom@19.2.8(react@18.3.1))(react@18.3.1)
+      change-case: 4.1.2
+      react: 18.3.1
+    transitivePeerDependencies:
+      - '@types/react-dom'
+      - react-dom
+
   '@wordpress/is-shallow-equal@5.53.0': {}
 
   '@wordpress/jest-console@9.1.0(jest@30.4.2(@types/node@20.19.43)(supports-color@8.1.1))':
@@ -10443,6 +10480,15 @@ snapshots:
   '@wordpress/prettier-config@4.53.0(wp-prettier@3.0.3)':
     dependencies:
       prettier: wp-prettier@3.0.3
+
+  '@wordpress/primitives@4.53.0(react-dom@19.2.8(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@wordpress/element': 8.5.0(react-dom@19.2.8(react@18.3.1))(react@18.3.1)
+      clsx: 2.1.1
+      react: 18.3.1
+    transitivePeerDependencies:
+      - '@types/react-dom'
+      - react-dom
 
   '@wordpress/priority-queue@3.53.0':
     dependencies:
@@ -11301,6 +11347,8 @@ snapshots:
       mimic-response: 1.0.1
 
   clone@1.0.4: {}
+
+  clsx@2.1.1: {}
 
   co@4.6.0: {}
 

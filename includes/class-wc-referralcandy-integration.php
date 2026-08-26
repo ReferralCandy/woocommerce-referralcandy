@@ -142,6 +142,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                     'default' => 'no'
                 ],
                 'popup_campaign_key' => [
+                    'title' => __('Campaign key', 'woocommerce-referralcandy'),
                     'type' => 'text',
                     'placeholder' => __('Paste campaign key', 'woocommerce-referralcandy'),
                     'desc_tip' => true,
@@ -351,43 +352,71 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             $order->save();
         }
 
-        public function check_plugin_requirements()
+        /**
+         * Requirement checks for the admin notice and the Overview screen.
+         *
+         * @return array[] Each: ['id' => string, 'label' => string, 'ok' => bool, 'message' => string]
+         */
+        public function get_requirement_checks()
         {
-            $message = "<strong>" . WC_REFERRALCANDY_LABEL . "</strong>: Please make sure the following settings are configured for your integration to work properly:";
-            $integration_incomplete = false;
-            $keys_to_check = [
-                'API Access ID' => $this->api_id,
-                'App ID' => $this->app_id,
-                'Secret Key' => $this->secret_key,
+            $checks = [];
+            $keys = [
+                'api_id'     => __('API Access ID', 'woocommerce-referralcandy'),
+                'app_id'     => __('App ID', 'woocommerce-referralcandy'),
+                'secret_key' => __('Secret Key', 'woocommerce-referralcandy'),
             ];
 
-            foreach ($keys_to_check as $key => $value) {
-                if (empty($value)) {
-                    $integration_incomplete = true;
-                    $message .= "<br> - $key";
-                }
+            foreach ($keys as $key => $label) {
+                $checks[] = [
+                    'id'      => $key,
+                    'label'   => $label,
+                    'ok'      => !empty($this->get_option($key)),
+                    /* translators: %s: setting label */
+                    'message' => sprintf(__('%s is not set.', 'woocommerce-referralcandy'), $label),
+                ];
             }
 
-            $timezone_string = wp_timezone_string();
-            if (empty($timezone_string)) {
-                $integration_incomplete = true;
-                $message .= "<br> - Store TimeZone (i.e. Asia/Singapore)";
+            $checks[] = [
+                'id'      => 'timezone',
+                'label'   => __('Store timezone', 'woocommerce-referralcandy'),
+                'ok'      => !empty(wp_timezone_string()),
+                'message' => __('Set a named store timezone (e.g. Asia/Singapore) under Settings > General.', 'woocommerce-referralcandy'),
+            ];
+
+            $checks[] = [
+                'id'      => 'popup_campaign_key',
+                'label'   => __('Popup campaign key', 'woocommerce-referralcandy'),
+                'ok'      => !$this->is_option_enabled('popup') || !empty($this->get_option('popup_campaign_key')),
+                'message' => __('The post-purchase popup is enabled but has no campaign key.', 'woocommerce-referralcandy'),
+            ];
+
+            $checks[] = [
+                'id'      => 'order_status',
+                'label'   => __('Order status', 'woocommerce-referralcandy'),
+                'ok'      => in_array($this->get_option('order_status'), array_keys(wc_get_order_statuses()), true),
+                'message' => __('Re-select the order status that should be sent to ReferralCandy and save.', 'woocommerce-referralcandy'),
+            ];
+
+            return $checks;
+        }
+
+        public function check_plugin_requirements()
+        {
+            $failed = array_filter($this->get_requirement_checks(), function ($check) {
+                return !$check['ok'];
+            });
+
+            if (!$failed) {
+                return;
             }
 
-            if($this->is_option_enabled('popup') && empty($this->get_option('popup_campaign_key'))) {
-                $integration_incomplete = true;
-                $message .= "<br> - Popup Campaign Key";
+            $message = "<strong>" . WC_REFERRALCANDY_LABEL . "</strong>: " . __('Please make sure the following settings are configured for your integration to work properly:', 'woocommerce-referralcandy');
+            foreach ($failed as $check) {
+                $message .= '<br> - ' . $check['message'];
             }
+            $message .= sprintf(' <a href="%s">%s</a>', esc_url(admin_url(WC_REFERRALCANDY_ADMIN_URL)), __('Open settings', 'woocommerce-referralcandy'));
 
-            $valid_statuses = array_keys(wc_get_order_statuses());
-            if (!in_array($this->get_option('order_status'), $valid_statuses)) {
-                $integration_incomplete = true;
-                $message .= "<br> - Please re-select your preferred order status to be sent to us and save your settings";
-            }
-
-            if ($integration_incomplete == true) {
-                printf('<div class="notice notice-warning"><p>%s</p></div>', $message);
-            }
+            printf('<div class="notice notice-warning"><p>%s</p></div>', wp_kses_post($message));
         }
 
         /**
