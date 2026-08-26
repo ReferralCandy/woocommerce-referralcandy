@@ -9,8 +9,7 @@
 
 class RC_Order {
     private $order;
-    public $base_url = 'https://my.referralcandy.com/api/v1';
-    public $wc_pre_30 = false;
+    public $base_url = WC_REFERRALCANDY_API_BASE;
     public $api_id;
     public $secret_key;
     public $first_name;
@@ -28,43 +27,22 @@ class RC_Order {
     public $referrer_id;
 
     public function __construct($wc_order_id, WC_Referralcandy_Integration $integration) {
-        $this->wc_pre_30 = version_compare(WC_VERSION, '3.0.0', '<');
         $this->order     = new WC_Order($wc_order_id);
 
-        if ($this->wc_pre_30) {
-            $this->order_timestamp = time();
-            $timezone_string = wp_timezone_string();
-            if (!empty($timezone_string)) {
-                $this->order_timestamp = DateTime::createFromFormat('Y-m-d H:i:s', $this->order->order_date, new DateTimeZone($timezone_string))->getTimestamp();
-            }
+        $order_data = $this->order->get_data();
 
-            $this->first_name        = $this->order->billing_first_name;
-            $this->last_name         = $this->order->billing_last_name;
-            $this->email             = $this->order->billing_email;
-            $this->total             = $this->order->get_total();
-            $this->currency          = $this->order->get_order_currency();
-            $this->order_number      = $wc_order_id;
-            $this->browser_ip        = $this->order->customer_ip_address;
-            $this->user_agent        = $this->order->customer_user_agent;
-            $this->accepts_marketing = get_post_meta($wc_order_id, 'rc_accepts_marketing', true) ? 'true' : 'false';
-            $this->referrer_id       = get_post_meta($wc_order_id, 'rc_aic', true);
-            $this->locale            = get_post_meta($wc_order_id, 'rc_loc', true);
-        } else {
-            $order_data = $this->order->get_data();
-
-            $this->first_name        = $order_data['billing']['first_name'];
-            $this->last_name         = $order_data['billing']['last_name'];
-            $this->email             = $order_data['billing']['email'];
-            $this->total             = $order_data['total'];
-            $this->currency          = $order_data['currency'];
-            $this->order_number      = $wc_order_id;
-            $this->order_timestamp   = $order_data['date_created']->getTimestamp();
-            $this->browser_ip        = $order_data['customer_ip_address'];
-            $this->user_agent        = $order_data['customer_user_agent'];
-            $this->accepts_marketing = $this->order->get_meta('rc_accepts_marketing', true, 'view') ? 'true' : 'false';
-            $this->referrer_id       = $this->order->get_meta('rc_aic', true, 'view');
-            $this->locale            = $this->order->get_meta('rc_loc', true, 'view');
-        }
+        $this->first_name        = $order_data['billing']['first_name'];
+        $this->last_name         = $order_data['billing']['last_name'];
+        $this->email             = $order_data['billing']['email'];
+        $this->total             = $order_data['total'];
+        $this->currency          = $order_data['currency'];
+        $this->order_number      = $wc_order_id;
+        $this->order_timestamp   = $order_data['date_created']->getTimestamp();
+        $this->browser_ip        = $order_data['customer_ip_address'];
+        $this->user_agent        = $order_data['customer_user_agent'];
+        $this->accepts_marketing = $this->order->get_meta('rc_accepts_marketing', true, 'view') ? 'true' : 'false';
+        $this->referrer_id       = $this->order->get_meta('rc_aic', true, 'view');
+        $this->locale            = $this->order->get_meta('rc_loc', true, 'view');
 
         $this->api_id           = $integration->api_id;
         $this->secret_key       = $integration->secret_key;
@@ -154,7 +132,7 @@ class RC_Order {
             $response_body  = json_decode($response['body']);
 
             if ($response_body->message == 'Success' && !empty($response_body->referralcorner_url)) {
-                $this->order->add_order_note('Order sent to ReferralCandy');
+                $this->order->add_order_note('Order sent to ' . WC_REFERRALCANDY_LABEL);
             }
         }
     }

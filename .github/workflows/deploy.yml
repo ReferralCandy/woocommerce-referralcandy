@@ -13,6 +13,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build admin assets
+        run: pnpm run build
+
+      - name: Assert build output
+        run: test -f build/index.js && test -f build/index.asset.php
+
       - name: Deploy to WordPress.org Plugin Directory
         uses: 10up/action-wordpress-plugin-deploy@stable
         env:

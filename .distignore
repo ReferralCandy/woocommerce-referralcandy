@@ -13,3 +13,10 @@ package.json
 pnpm-lock.yaml
 scripts
 README.md
+src
+pnpm-workspace.yaml
+CLAUDE.md
+*.zip
+dist
+.env
+.env.example

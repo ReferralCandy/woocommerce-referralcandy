@@ -88,6 +88,12 @@ We maintain a list of FAQs on our [help page](https://help.referralcandy.com/)!
 
 == Changelog ==
 
+= 3.0.0 =
+* Settings moved to a new React page under WooCommerce > ReferralCandy (the old WooCommerce > Settings > Integration tab redirects there)
+* Requires WooCommerce 9.0.1 or higher
+* Declares compatibility with High-Performance Order Storage (HPOS)
+* Existing settings are preserved on upgrade
+
 = 2.5.6 =
 * Update plugin branding: new logo, icons, banners, and screenshots
 

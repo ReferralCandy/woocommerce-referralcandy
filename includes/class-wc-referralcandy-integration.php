@@ -19,14 +19,16 @@ if (!class_exists('WC_Referralcandy_Integration')) {
         public $secret_key;
         public $status_to;
         public $tracking_page;
-        public $accepts_marketing_field_id = 'referralcandy/accepts-marketing';
+        public $accepts_marketing_field_id = WC_REFERRALCANDY_SLUG . '/accepts-marketing';
+        /** Classic-checkout input name; suffixed so a staging copy can coexist with production. */
+        public $classic_field_name = 'rc_accepts_marketing' . WC_REFERRALCANDY_SUFFIX;
 
         public function __construct()
         {
             global $woocommerce;
 
-            $this->id = 'referralcandy';
-            $this->method_title = __('ReferralCandy', 'woocommerce-referralcandy');
+            $this->id = WC_REFERRALCANDY_ID;
+            $this->method_title = WC_REFERRALCANDY_LABEL;
             $this->method_description = __('Welcome to ReferralCandy! Get started with our easy integration process:<br/>'.
             '<div style="background: #fff; border: 1px solid #c3c4c7; width: fit-content;">'.
             '<p style="padding: 1px 6px; margin: 4px;">Note: If you have already completed your account setup in the ReferralCandy dashboard, please copy your API Access ID, App ID, and Secret Key below.</p>'.
@@ -52,7 +54,6 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             $this->tracking_page = $this->get_option('tracking_page');
 
             // Actions.
-            add_action('woocommerce_update_options_integration_' . $this->id, [$this, 'process_admin_options']);
             add_action('admin_notices', [$this, 'check_plugin_requirements']);
             add_action('init', [$this, 'rc_set_referrer_cookie']);
             add_action('wp_enqueue_scripts', [$this, 'render_tracking_code']);
@@ -62,10 +63,6 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             add_action('woocommerce_init', [$this, 'render_accepts_marketing_field']);
             add_action('wp_enqueue_scripts', [$this, 'enqueue_classic_accepts_marketing_script']);
             add_action('woocommerce_store_api_checkout_update_order_meta', [$this, 'update_order_meta']);
-            add_action('admin_footer', [$this, 'dynamic_toggle_post_purchase_popup_campaign_key_field']);
-
-            // Filters.
-            add_filter('woocommerce_settings_api_sanitized_fields_' . $this->id, [$this, 'sanitize_settings']);
         }
 
         public function init_form_fields()
@@ -166,102 +163,70 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             ];
         }
 
-        public function dynamic_toggle_post_purchase_popup_campaign_key_field()
+        /**
+         * Validates settings submitted from the React settings page.
+         *
+         * Merges defaults, the stored values and the submitted values so a partial
+         * payload never resets omitted fields. Only keys present in $form_fields
+         * are kept.
+         *
+         * @param array $submitted Values from the request body.
+         * @param array $current   Values currently stored in the option.
+         * @return array|WP_Error Clean values ready for update_option(), or a 400 error.
+         */
+        public function validate_settings(array $submitted, array $current)
         {
-            ?>
-            <script>
-                jQuery(document).ready(function ($) {
-                    var $popupCheckbox = $('#woocommerce_referralcandy_popup');
-                    var $popupCampaignKeyField = $('.popup-campaign-key-field');
-                    var tooltipContent = <?php echo json_encode($this->form_fields['popup_campaign_key']['description']); ?>;
+            $defaults = wp_list_pluck($this->form_fields, 'default');
+            $in = array_merge($defaults, $current, $submitted);
+            $out = [];
 
-                    function toggleCampaignKeyField() {
-                        if ($popupCheckbox.is(':checked')) {
-                            $popupCampaignKeyField.closest('.popup-campaign-key-wrapper').show();
-                        } else {
-                            $popupCampaignKeyField.closest('.popup-campaign-key-wrapper').hide();
-                            $popupCampaignKeyField.val('');
-                        }
+            foreach ($this->form_fields as $key => $field) {
+                $value = isset($in[$key]) ? $in[$key] : '';
+                $label = isset($field['title']) ? $field['title'] : $key;
+
+                if ($field['type'] === 'checkbox') {
+                    if ($value === 'yes' || $value === true) {
+                        $value = 'yes';
+                    } elseif ($value === 'no' || $value === false || $value === '') {
+                        $value = 'no';
+                    } else {
+                        return $this->invalid_setting($label);
                     }
-
-                    $popupCheckbox.on('change', toggleCampaignKeyField);
-
-                    // Move campaign key field below the checkbox
-                    $popupCampaignKeyField.closest('tr').hide();
-                    $popupCheckbox.closest('td').append('<div class="popup-campaign-key-wrapper"><div class="popup-campaign-key-inner"></div></div>');
-                    $('.popup-campaign-key-inner').append($popupCampaignKeyField);
-
-                    // Add tooltip icon inside the campaign key field
-                    $popupCampaignKeyField.after('<span class="popup-campaign-key-tooltip dashicons dashicons-editor-help"></span>');
-
-                    // Initialize tooltip
-                    $('.popup-campaign-key-tooltip').tipTip({
-                        content: tooltipContent,
-                        fadeIn: 50,
-                        fadeOut: 50,
-                        delay: 200,
-                        maxWidth: '300px'
-                    });
-
-                    toggleCampaignKeyField();
-                });
-            </script>
-            <style>
-                .popup-campaign-key-inner {
-                    position: relative;
-                    display: inline-block;
+                } elseif (!is_string($value)) {
+                    return $this->invalid_setting($label);
+                } elseif ($field['type'] === 'select') {
+                    // A stored value that is no longer an option (e.g. deleted page) may be kept
+                    // unchanged so it does not block saving unrelated fields.
+                    $unchanged = isset($current[$key]) && $current[$key] === $value;
+                    if (!isset($field['options'][$value]) && !$unchanged) {
+                        return $this->invalid_setting($label);
+                    }
+                } else {
+                    $value = sanitize_text_field($value);
                 }
 
-                .popup-campaign-key-field {
-                    width: 300px;
-                    padding-right: 25px;
-                }
+                $out[$key] = $value;
+            }
 
-                .popup-campaign-key-field::placeholder {
-                    color: #999;
-                    opacity: 0.6;
-                }
-                .popup-campaign-key-tooltip {
-                    position: absolute;
-                    right: 5px;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    cursor: help;
-                }
+            if ($out['popup'] === 'yes' && $out['popup_campaign_key'] === '') {
+                return new WP_Error(
+                    'rc_invalid_setting',
+                    __('Popup campaign key is required when the post-purchase popup is enabled.', 'woocommerce-referralcandy'),
+                    ['status' => 400]
+                );
+            }
 
-                #tiptip_content {
-                    text-align: left;
-                    max-width: 300px;
-                    white-space: normal;
-                    font-size: 12px;
-                    line-height: 1.4;
-                }
-
-                #tiptip_content h4 {
-                    margin: 0 0 5px;
-                    font-size: 14px;
-                    font-weight: bold;
-                }
-
-                #tiptip_content p {
-                    margin: 0 0 10px;
-                }
-
-                #tiptip_content ol {
-                    margin: 0;
-                    padding-left: 20px;
-                }
-
-                #tiptip_content li {
-                    margin-bottom: 5px;
-                }
-            </style>
-            <?php
+            return $out;
         }
 
-        public function sanitize_settings($settings)
+        private function invalid_setting($label)
         {
-            return $settings;
+            return new WP_Error(
+                'rc_invalid_setting',
+                /* translators: %s: setting label */
+                sprintf(__('Invalid value for "%s".', 'woocommerce-referralcandy'), wp_strip_all_tags($label)),
+                ['status' => 400]
+            );
         }
 
         private function is_option_enabled($option_name)
@@ -310,25 +275,27 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 return;
             }
 
-            $field_html = '<p class="form-row form-row-wide" id="rc_accepts_marketing_field">' .
+            $name = $this->classic_field_name;
+            $field_html = '<p class="form-row form-row-wide" id="' . $name . '_field">' .
                 '<label class="woocommerce-form__label woocommerce-form__label-for-checkbox checkbox">' .
-                '<input type="checkbox" name="rc_accepts_marketing" id="rc_accepts_marketing" value="1" ' .
+                '<input type="checkbox" name="' . $name . '" id="' . $name . '" value="1" ' .
                 'class="woocommerce-form__input woocommerce-form__input-checkbox input-checkbox"> ' .
                 '<span>' . esc_html($this->get_option('accepts_marketing_label')) . '</span>' .
                 '</label></p>';
 
-            wp_register_script('rc-accepts-marketing', false, ['jquery'], null, true);
-            wp_enqueue_script('rc-accepts-marketing');
-            wp_add_inline_script('rc-accepts-marketing', sprintf(
+            $handle = 'rc-accepts-marketing' . WC_REFERRALCANDY_SUFFIX;
+            wp_register_script($handle, false, ['jquery'], null, true);
+            wp_enqueue_script($handle);
+            wp_add_inline_script($handle, sprintf(
                 '(function($){
                     var fieldHtml = %s;
                     function rcInjectMarketingCheckbox() {
-                        var wasChecked = $("#rc_accepts_marketing").is(":checked");
-                        $("#rc_accepts_marketing_field").remove();
+                        var wasChecked = $("#' . $name . '").is(":checked");
+                        $("#' . $name . '_field").remove();
                         var $btn = $("#place_order");
                         if (!$btn.length) return;
                         $btn.before(fieldHtml);
-                        if (wasChecked) $("#rc_accepts_marketing").prop("checked", true);
+                        if (wasChecked) $("#' . $name . '").prop("checked", true);
                     }
                     $(document).ready(rcInjectMarketingCheckbox);
                     $(document.body).on("updated_checkout", rcInjectMarketingCheckbox);
@@ -386,7 +353,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
 
         public function check_plugin_requirements()
         {
-            $message = "<strong>ReferralCandy</strong>: Please make sure the following settings are configured for your integration to work properly:";
+            $message = "<strong>" . WC_REFERRALCANDY_LABEL . "</strong>: Please make sure the following settings are configured for your integration to work properly:";
             $integration_incomplete = false;
             $keys_to_check = [
                 'API Access ID' => $this->api_id,
@@ -442,7 +409,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 $order->update_meta_data('rc_aic', sanitize_text_field($_COOKIE['rc_referrer_id']));
             }
 
-            if ($this->is_option_enabled('enable_marketing_checkbox') && !empty($_POST['rc_accepts_marketing'])) {
+            if ($this->is_option_enabled('enable_marketing_checkbox') && !empty($_POST[$this->classic_field_name])) {
                 $order->update_meta_data('rc_accepts_marketing', '1');
             }
         }
