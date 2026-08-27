@@ -15,7 +15,7 @@ pnpm i
 pnpm run build          # src/index.js -> build/index.js + build/index.asset.php (required before the settings page works)
 pnpm run watch          # rebuild on change
 pnpm run zip            # build + dist/woocommerce-referralcandy-<ver>.zip for manual upload
-pnpm run zip:staging    # build + dist/referralcandy-for-woocommerce-<ver>.zip (staging flavor, see below)
+pnpm run zip:staging    # build + dist/woocommerce-referralcandy-<ver>-staging.zip (staging flavor, see below)
 pnpm run start          # wp-env up at http://localhost:8888 (WP 7.0, WC 10.9.1, PHP 8.2 per .wp-env.json)
 pnpm run start:xdebug   # same, with Xdebug
 pnpm run dev            # start + `wp rewrite flush --hard` + cloudflared HTTPS tunnel (foreground, Ctrl-C stops tunnel only)

@@ -3,7 +3,8 @@
  * Packages the plugin into dist/<folder>-<version>.zip for manual upload.
  *
  *   node scripts/package.mjs production   -> dist/woocommerce-referralcandy-3.0.0.zip
- *   node scripts/package.mjs staging      -> dist/referralcandy-for-woocommerce-3.0.0.zip
+ *   node scripts/package.mjs staging      -> dist/woocommerce-referralcandy-3.0.0-staging.zip
+ *                                            (plugin folder inside: referralcandy-for-woocommerce)
  *
  * Run `pnpm run build` first; build/ must exist.
  *
@@ -166,7 +167,13 @@ if ( flavorName !== 'production' ) {
 }
 
 mkdirSync( join( ROOT, 'dist' ), { recursive: true } );
-const out = join( ROOT, 'dist', `${ flavor.folder }-${ version }.zip` );
+// Zip name carries the flavor; the folder inside stays flavor-specific for coexistence.
+const suffix = flavorName === 'production' ? '' : `-${ flavorName }`;
+const out = join(
+	ROOT,
+	'dist',
+	`woocommerce-referralcandy-${ version }${ suffix }.zip`
+);
 zip.writeZip( out );
 
 console.log(
