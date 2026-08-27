@@ -88,6 +88,9 @@ We maintain a list of FAQs on our [help page](https://help.referralcandy.com/)!
 
 == Changelog ==
 
+= 2.5.6 =
+* Update plugin branding: new logo, icons, banners, and screenshots
+
 = 2.5.5 =
 * Fix "accepts marketing" field support on checkout
 
