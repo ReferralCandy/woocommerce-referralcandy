@@ -2,7 +2,7 @@
 /**
  * WooCommerce ReferralCandy Integration.
  *
- * Full-screen admin app (React) and the REST route that backs it.
+ * Full-screen admin app (React) and the REST routes that back it.
  *
  * The plugin gets its own top-level menu. On that screen the WordPress admin chrome
  * (admin bar, menu, footer, notices) is hidden with CSS and the React app fills the
@@ -24,6 +24,7 @@ if (!class_exists('RC_Admin')) {
         const ROOT_ID = 'wc-referralcandy-admin-root';
         const BODY_CLASS = 'wc-referralcandy-fullscreen';
         const CAPABILITY = 'manage_woocommerce';
+        const SIGNUP_STARTED_OPTION = 'wc_referralcandy_signup_started';
 
         /** @var string Hook suffix (= screen id) returned by add_menu_page(). */
         private $hook_suffix = '';
@@ -45,6 +46,11 @@ if (!class_exists('RC_Admin')) {
         private function page_url($route = '')
         {
             return 'admin.php?page=' . WC_REFERRALCANDY_SLUG . ($route ? '#' . $route : '');
+        }
+
+        private function app_url($path)
+        {
+            return rtrim(WC_REFERRALCANDY_APP_BASE, '/') . $path;
         }
 
         public function register_menu()
@@ -132,19 +138,22 @@ if (!class_exists('RC_Admin')) {
             $plugin = get_file_data(WC_REFERRALCANDY_PLUGIN_FILE, ['Version' => 'Version']);
 
             return [
-                'rootId'   => self::ROOT_ID,
-                'id'       => WC_REFERRALCANDY_ID,
-                'title'    => WC_REFERRALCANDY_LABEL,
-                'version'  => $plugin['Version'],
-                'restPath' => '/' . $this->rest_namespace() . '/settings',
-                'adminUrl' => admin_url(),
-                'links'    => [
-                    'signup'      => 'https://my.referralcandy.com/signup?utm_source=woocommerce-plugin&utm_medium=plugin&utm_campaign=woocommerce-integration-signup',
-                    'integration' => 'https://my.referralcandy.com/integration',
-                    'dashboard'   => 'https://my.referralcandy.com/',
-                    'guide'       => 'https://www.referralcandy.com/blog/woocommerce-setup?utm_source=woocommerce-plugin&utm_medium=plugin&utm_campaign=woocommerce-integration-blog',
-                    'help'        => 'https://help.referralcandy.com/',
-                    'changelog'   => 'https://wordpress.org/plugins/referralcandy-for-woocommerce/#developers',
+                'rootId'         => self::ROOT_ID,
+                'id'             => WC_REFERRALCANDY_ID,
+                'title'          => WC_REFERRALCANDY_LABEL,
+                'version'        => $plugin['Version'],
+                'restPath'       => '/' . $this->rest_namespace() . '/settings',
+                'onboardingPath' => '/' . $this->rest_namespace() . '/onboarding',
+                'adminUrl'       => admin_url(),
+                'hasCredentials' => $this->integration()->has_credentials(),
+                'links'          => [
+                    'signup'       => $this->app_url('/signup/woocommerce'),
+                    'login'        => $this->app_url('/login'),
+                    'dashboard'    => $this->app_url('/'),
+                    'integrations' => $this->app_url('/integrations/woocommerce'),
+                    'guide'        => 'https://www.referralcandy.com/blog/woocommerce-setup?utm_source=woocommerce-plugin&utm_medium=plugin&utm_campaign=woocommerce-integration-blog',
+                    'help'         => 'https://help.referralcandy.com/',
+                    'changelog'    => 'https://wordpress.org/plugins/referralcandy-for-woocommerce/#developers',
                 ],
             ];
         }
@@ -209,8 +218,9 @@ if (!class_exists('RC_Admin')) {
             $permission = function () {
                 return current_user_can(self::CAPABILITY);
             };
+            $ns = $this->rest_namespace();
 
-            register_rest_route($this->rest_namespace(), '/settings', [
+            register_rest_route($ns, '/settings', [
                 [
                     'methods'             => WP_REST_Server::READABLE,
                     'callback'            => [$this, 'get_settings'],
@@ -221,6 +231,22 @@ if (!class_exists('RC_Admin')) {
                     'callback'            => [$this, 'save_settings'],
                     'permission_callback' => $permission,
                 ],
+            ]);
+
+            register_rest_route($ns, '/onboarding', [
+                'methods'             => WP_REST_Server::READABLE,
+                'callback'            => [$this, 'get_onboarding'],
+                'permission_callback' => $permission,
+            ]);
+            register_rest_route($ns, '/onboarding/start', [
+                'methods'             => WP_REST_Server::CREATABLE,
+                'callback'            => [$this, 'start_signup'],
+                'permission_callback' => $permission,
+            ]);
+            register_rest_route($ns, '/onboarding/verify', [
+                'methods'             => WP_REST_Server::CREATABLE,
+                'callback'            => [$this, 'verify_credentials'],
+                'permission_callback' => $permission,
             ]);
         }
 
@@ -285,10 +311,95 @@ if (!class_exists('RC_Admin')) {
 
             update_option($integration->get_option_key(), $clean);
             // Status checks read through get_option(), which caches the settings array in the
-            // integration; reload so the response reflects what was just saved.
+            // integration; reload so the response reflects what was just saved. Keys may have
+            // changed, so the cached verification result is stale too.
             $integration->init_settings();
+            $integration->api_id = $clean['api_id'];
+            $integration->secret_key = $clean['secret_key'];
+            RC_Api::forget_verification();
 
             return $this->response($clean);
+        }
+
+        // ---- Onboarding -------------------------------------------------------------------
+
+        private function store_url()
+        {
+            return home_url('/');
+        }
+
+        public function get_onboarding()
+        {
+            $store_url = $this->store_url();
+            $started = (int) get_option(self::SIGNUP_STARTED_OPTION, 0);
+
+            return rest_ensure_response([
+                'storeUrl'        => $store_url,
+                'https'           => wp_parse_url($store_url, PHP_URL_SCHEME) === 'https',
+                'canAuthorize'    => current_user_can(self::CAPABILITY),
+                'storeExists'     => RC_Api::store_exists($store_url),
+                'signupStartedAt' => $started ?: null,
+                'hasCredentials'  => $this->integration()->has_credentials(),
+            ]);
+        }
+
+        /**
+         * Starts ReferralCandy's wc-auth signup for this store. ReferralCandy answers with the
+         * store's own WooCommerce authorize URL, which the browser then navigates to.
+         */
+        public function start_signup()
+        {
+            $store_url = $this->store_url();
+
+            if (wp_parse_url($store_url, PHP_URL_SCHEME) !== 'https') {
+                return new WP_Error(
+                    'rc_store_not_https',
+                    __('Your store must be served over HTTPS before it can be connected to ReferralCandy.', 'woocommerce-referralcandy'),
+                    ['status' => 400]
+                );
+            }
+
+            $result = RC_Api::main_api('POST', '/commerce-platform/woocommerce/wc-auth/signup/start', [
+                'storeUrl' => $store_url,
+                // Where ReferralCandy sends the merchant after payment (once rc-main supports it).
+                'returnTo' => admin_url(WC_REFERRALCANDY_ADMIN_URL . '#/setup/keys'),
+            ]);
+
+            if (is_wp_error($result)) {
+                return new WP_Error('rc_signup_unreachable', __('Could not reach ReferralCandy. Check your connection and try again.', 'woocommerce-referralcandy') . ' (' . $result->get_error_message() . ')', ['status' => 502]);
+            }
+
+            if ($result['code'] !== 200) {
+                $passthrough = in_array($result['code'], [400, 429, 503], true) ? $result['code'] : 502;
+
+                return new WP_Error(
+                    'rc_signup_failed',
+                    RC_Api::error_message($result, __('ReferralCandy could not start the signup. Try again in a moment.', 'woocommerce-referralcandy')),
+                    ['status' => $passthrough]
+                );
+            }
+
+            $redirect = isset($result['body']['redirectUrl']) ? (string) $result['body']['redirectUrl'] : '';
+
+            // The authorize page must live on this store. Anything else is not a URL we send an
+            // admin to, however it got into the response.
+            if (
+                $redirect === ''
+                || strtolower((string) wp_parse_url($redirect, PHP_URL_HOST)) !== strtolower((string) wp_parse_url($store_url, PHP_URL_HOST))
+            ) {
+                return new WP_Error('rc_signup_bad_redirect', __('ReferralCandy returned an unexpected address. Please try again.', 'woocommerce-referralcandy'), ['status' => 502]);
+            }
+
+            update_option(self::SIGNUP_STARTED_OPTION, time(), false);
+
+            return rest_ensure_response(['redirectUrl' => $redirect]);
+        }
+
+        public function verify_credentials()
+        {
+            $this->integration()->init_settings();
+
+            return rest_ensure_response(RC_Api::verify(true));
         }
     }
 }

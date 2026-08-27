@@ -352,6 +352,11 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             $order->save();
         }
 
+        public function has_credentials()
+        {
+            return !empty($this->get_option('api_id')) && !empty($this->get_option('secret_key'));
+        }
+
         /**
          * Requirement checks for the admin notice and the Overview screen.
          *
@@ -373,6 +378,16 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                     'ok'      => !empty($this->get_option($key)),
                     /* translators: %s: setting label */
                     'message' => sprintf(__('%s is not set.', 'woocommerce-referralcandy'), $label),
+                ];
+            }
+
+            if ($this->has_credentials() && class_exists('RC_Api')) {
+                $verified = RC_Api::verify();
+                $checks[] = [
+                    'id'      => 'api_verified',
+                    'label'   => __('API keys verified', 'woocommerce-referralcandy'),
+                    'ok'      => $verified['ok'],
+                    'message' => __('ReferralCandy rejected the API keys — re-copy them from Integrations > WooCommerce.', 'woocommerce-referralcandy') . ' (' . $verified['message'] . ')',
                 ];
             }
 

@@ -71,7 +71,7 @@ Welcome to ReferralCandy! Get started with our easy integration process:
 **Note: If you have already completed your account setup in the ReferralCandy dashboard, you may skip step 1.**
 
 1. Start Your Free Trial: [Sign up here](https://my.referralcandy.com/signup?utm_source=woocommerce-plugin&utm_medium=plugin&utm_campaign=woocommerce-integration-signup).
-2. Integrate with WooCommerce: In your dashboard, go to ["Integrations" > "WooCommerce"](https://my.referralcandy.com/integration).
+2. Integrate with WooCommerce: In your dashboard, go to ["Integrations" > "WooCommerce"](https://my.referralcandy.com/integrations/woocommerce).
 3. Enter API Details: Copy your API Access ID, App ID, and Secret Key and paste it in the Woocommerce plugin integration page.
 
 That's it! Your store is now connected. A purchase is required to confirm integration success.
@@ -89,6 +89,7 @@ We maintain a list of FAQs on our [help page](https://help.referralcandy.com/)!
 == Changelog ==
 
 = 3.0.0 =
+* Guided setup: create your ReferralCandy account and connect the store from the plugin (WooCommerce approval, no key copying), then verify your API keys in place
 * New full-screen ReferralCandy admin app (own menu) with Overview, grouped Settings and Help pages; the old WooCommerce > Settings > Integration tab redirects there
 * Requires WooCommerce 9.0.1 or higher
 * Declares compatibility with High-Performance Order Storage (HPOS)

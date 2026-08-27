@@ -1,5 +1,6 @@
 import { Icon } from '@wordpress/components';
 import {
+	check,
 	chevronLeft,
 	chevronRight,
 	cog,
@@ -9,7 +10,15 @@ import {
 } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
 
-function NavItem( { icon, label, active, onClick, arrow } ) {
+function NavItem( {
+	icon,
+	label,
+	active,
+	onClick,
+	arrow,
+	trailing,
+	disabled,
+} ) {
 	return (
 		<button
 			type="button"
@@ -17,9 +26,11 @@ function NavItem( { icon, label, active, onClick, arrow } ) {
 				active ? ' rc-shell__nav-item--active' : ''
 			}` }
 			onClick={ onClick }
+			disabled={ disabled }
 		>
 			{ icon && <Icon icon={ icon } size={ 24 } /> }
 			<span className="rc-shell__nav-label">{ label }</span>
+			{ trailing }
 			{ arrow && (
 				<Icon
 					icon={ chevronRight }
@@ -31,6 +42,69 @@ function NavItem( { icon, label, active, onClick, arrow } ) {
 	);
 }
 
+function SetupNav( { sub, signupStarted, navigate } ) {
+	const steps = [
+		{
+			key: 'create',
+			label: __( 'Create account', 'woocommerce-referralcandy' ),
+			active: ! sub,
+			done: signupStarted,
+			to: '/setup',
+		},
+		{
+			key: 'approve',
+			label: __( 'Approve & pay', 'woocommerce-referralcandy' ),
+			active: false,
+			done: signupStarted,
+		},
+		{
+			key: 'keys',
+			label: __( 'Enter API keys', 'woocommerce-referralcandy' ),
+			active: sub === 'keys',
+			done: false,
+			to: '/setup/keys',
+		},
+	];
+
+	return (
+		<>
+			<h2 className="rc-shell__title">
+				{ __( 'Setup', 'woocommerce-referralcandy' ) }
+			</h2>
+			<p className="rc-shell__desc">
+				{ __(
+					"Three steps. Your store's own URL is used; nothing to type.",
+					'woocommerce-referralcandy'
+				) }
+			</p>
+			<nav className="rc-shell__nav">
+				{ steps.map( ( step, i ) => (
+					<NavItem
+						key={ step.key }
+						label={ step.label }
+						active={ step.active }
+						disabled={ ! step.to }
+						onClick={ () => step.to && navigate( step.to ) }
+						trailing={
+							<span
+								className={ `rc-shell__nav-step${
+									step.done ? ' rc-shell__nav-step--done' : ''
+								}` }
+							>
+								{ step.done ? (
+									<Icon icon={ check } size={ 16 } />
+								) : (
+									i + 1
+								) }
+							</span>
+						}
+					/>
+				) ) }
+			</nav>
+		</>
+	);
+}
+
 export default function Shell( {
 	config,
 	section,
@@ -39,9 +113,11 @@ export default function Shell( {
 	navigate,
 	pageTitle,
 	headerAction,
+	signupStarted,
 	children,
 } ) {
 	const inSettings = section === 'settings';
+	const inSetup = section === 'setup';
 
 	return (
 		<div className="rc-shell">
@@ -56,7 +132,15 @@ export default function Shell( {
 					</span>
 				</a>
 
-				{ inSettings ? (
+				{ inSetup && (
+					<SetupNav
+						sub={ sub }
+						signupStarted={ signupStarted }
+						navigate={ navigate }
+					/>
+				) }
+
+				{ inSettings && (
 					<>
 						<button
 							type="button"
@@ -90,7 +174,9 @@ export default function Shell( {
 							) ) }
 						</nav>
 					</>
-				) : (
+				) }
+
+				{ ! inSetup && ! inSettings && (
 					<>
 						<h2 className="rc-shell__title">{ config.title }</h2>
 						<p className="rc-shell__desc">

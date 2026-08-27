@@ -9,7 +9,6 @@
 
 class RC_Order {
     private $order;
-    public $base_url = WC_REFERRALCANDY_API_BASE;
     public $api_id;
     public $secret_key;
     public $first_name;
@@ -50,7 +49,6 @@ class RC_Order {
 
     private function generate_post_fields($specific_keys = [], $additional_keys = []) {
         $post_fields = [
-            'accessID'              => $this->api_id,
             'accepts_marketing'     => $this->accepts_marketing,
             'first_name'            => $this->first_name,
             'last_name'             => $this->last_name,
@@ -62,7 +60,6 @@ class RC_Order {
             'invoice_amount'        => $this->total,
             'currency_code'         => $this->currency,
             'external_reference_id' => $this->order_number,
-            'timestamp'             => time(),
         ];
 
         // only add referrer_id if present
@@ -96,44 +93,23 @@ class RC_Order {
         return $post_fields;
     }
 
-    // created this function because PHP's http_build_query function converts 'timestamp' to 'xstamp'
-    private function prepParams(Array $params) {
-        $preppedParams = '';
-        foreach($params as $key => $value) {
-            $preppedParams .= "$key=$value";
-        }
-
-        return $preppedParams;
-    }
-
-    private function generate_request_body($post_fields) {
-        if (!empty($this->secret_key) && !empty($this->api_id)) {
-            $params = [
-                'body' => $post_fields
-            ];
-            $params['body']['signature'] = md5($this->secret_key . $this->prepParams($post_fields));
-
-            return $params;
-        }
-    }
-
     // https://www.referralcandy.com/api#purchase
     public function submit_purchase() {
-        $endpoint = join('/', [$this->base_url, 'purchase.json']);
+        if (empty($this->secret_key) || empty($this->api_id)) {
+            return;
+        }
 
-        if (!empty($this->secret_key) && !empty($this->api_id)) {
-            $params         = $this->generate_request_body($this->generate_post_fields());
-            $response       = wp_safe_remote_post($endpoint, $params);
+        // RC_Api adds accessID + timestamp and signs the sorted parameters.
+        $result = RC_Api::signed_request('purchase.json', $this->generate_post_fields());
 
-            if (is_wp_error($response)) {
-                return error_log(print_r($response, TRUE));
-            }
+        if (is_wp_error($result)) {
+            return error_log(print_r($result, TRUE));
+        }
 
-            $response_body  = json_decode($response['body']);
+        $body = $result['body'];
 
-            if ($response_body->message == 'Success' && !empty($response_body->referralcorner_url)) {
-                $this->order->add_order_note('Order sent to ' . WC_REFERRALCANDY_LABEL);
-            }
+        if (isset($body['message']) && $body['message'] === 'Success' && !empty($body['referralcorner_url'])) {
+            $this->order->add_order_note('Order sent to ' . WC_REFERRALCANDY_LABEL);
         }
     }
 }

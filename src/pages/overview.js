@@ -3,8 +3,56 @@ import { check, closeSmall } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
 
 export default function Overview( { status, links, navigate } ) {
-	const failed = status.filter( ( s ) => ! s.ok );
-	const ready = failed.length === 0;
+	const byId = Object.fromEntries( status.map( ( s ) => [ s.id, s ] ) );
+	const hasKeys = byId.api_id?.ok && byId.secret_key?.ok;
+	const verified = byId.api_verified?.ok;
+	const ready = status.every( ( s ) => s.ok );
+
+	let hero;
+	if ( ! hasKeys ) {
+		hero = {
+			title: __(
+				'Finish connecting your store.',
+				'woocommerce-referralcandy'
+			),
+			text: __(
+				'Enter the API keys from your ReferralCandy account to start sending orders and tracking referrals.',
+				'woocommerce-referralcandy'
+			),
+			cta: __( 'Enter API keys', 'woocommerce-referralcandy' ),
+			to: '/setup/keys',
+		};
+	} else if ( verified === false ) {
+		hero = {
+			title: __(
+				'ReferralCandy rejected your API keys.',
+				'woocommerce-referralcandy'
+			),
+			text: __(
+				'Orders are not being sent. Re-copy the API Access ID, App ID and Secret Key from Integrations → WooCommerce.',
+				'woocommerce-referralcandy'
+			),
+			cta: __( 'Fix API keys', 'woocommerce-referralcandy' ),
+			to: '/settings/connection',
+		};
+	} else {
+		hero = {
+			title: ready
+				? __( 'Your store is connected.', 'woocommerce-referralcandy' )
+				: __( 'Almost there.', 'woocommerce-referralcandy' ),
+			text: ready
+				? __(
+						'Orders that reach the configured status are sent to ReferralCandy so referrals get rewarded automatically.',
+						'woocommerce-referralcandy'
+				  )
+				: __(
+						'Your keys are verified; a few settings below still need attention.',
+						'woocommerce-referralcandy'
+				  ),
+			cta: __( 'Open settings', 'woocommerce-referralcandy' ),
+			to: '/settings/connection',
+		};
+	}
 
 	return (
 		<>
@@ -13,37 +61,14 @@ export default function Overview( { status, links, navigate } ) {
 					<p className="rc-hero__eyebrow">
 						{ __( 'Overview', 'woocommerce-referralcandy' ) }
 					</p>
-					<h1>
-						{ ready
-							? __(
-									'Your store is connected.',
-									'woocommerce-referralcandy'
-							  )
-							: __(
-									'Finish connecting your store.',
-									'woocommerce-referralcandy'
-							  ) }
-					</h1>
-					<p>
-						{ ready
-							? __(
-									'Orders that reach the configured status are sent to ReferralCandy so referrals get rewarded automatically.',
-									'woocommerce-referralcandy'
-							  )
-							: __(
-									'Paste your API credentials from the ReferralCandy dashboard to start tracking referrals.',
-									'woocommerce-referralcandy'
-							  ) }
-					</p>
+					<h1>{ hero.title }</h1>
+					<p>{ hero.text }</p>
 					<div className="rc-hero__actions">
 						<Button
 							variant="primary"
-							onClick={ () => navigate( '/settings/connection' ) }
+							onClick={ () => navigate( hero.to ) }
 						>
-							{ __(
-								'Open settings',
-								'woocommerce-referralcandy'
-							) }
+							{ hero.cta }
 						</Button>
 						<Button
 							variant="link"
@@ -111,19 +136,19 @@ export default function Overview( { status, links, navigate } ) {
 					</li>
 					<li>
 						<a
-							href={ links.integration }
+							href={ links.integrations }
 							target="_blank"
 							rel="noreferrer"
 						>
 							{ __(
-								'Open Integrations > WooCommerce',
+								'Open Integrations → WooCommerce',
 								'woocommerce-referralcandy'
 							) }
 						</a>
 					</li>
 					<li>
 						{ __(
-							'Paste the API Access ID, App ID and Secret Key under Settings > API Connection.',
+							'Paste the API Access ID, App ID and Secret Key under Settings → API Connection.',
 							'woocommerce-referralcandy'
 						) }
 					</li>

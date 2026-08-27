@@ -32,11 +32,14 @@ if (!defined('ABSPATH')) {
     die('Direct access is prohibited.');
 }
 
-// Flavor. scripts/package.mjs rewrites these three lines for the staging build; everything
-// else (integration id, option key, REST namespace, admin path, field ids) derives from them.
+// Flavor. scripts/package.mjs rewrites these lines for the staging build (every *_BASE value
+// comes from .env there); everything else (integration id, option key, REST namespace, admin
+// path, field ids) derives from them.
 define('WC_REFERRALCANDY_SUFFIX', '');
 define('WC_REFERRALCANDY_LABEL', 'ReferralCandy');
 define('WC_REFERRALCANDY_API_BASE', 'https://my.referralcandy.com/api/v1');
+define('WC_REFERRALCANDY_MAIN_API_BASE', 'https://mainapi.referralcandy.com/v1');
+define('WC_REFERRALCANDY_APP_BASE', 'https://my.referralcandy.com');
 
 define('WC_REFERRALCANDY_PLUGIN_FILE', __FILE__);
 define('WC_REFERRALCANDY_MIN_WC', '9.0.1');

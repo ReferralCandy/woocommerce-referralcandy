@@ -452,3 +452,103 @@ $muted: #757575;
 		border-top: 1px solid #f0f0f0;
 	}
 }
+
+// ---- Setup wizard -------------------------------------------------------------------------
+
+.rc-shell__nav-item:disabled {
+	cursor: default;
+	color: rgba(255, 255, 255, 0.45);
+}
+
+.rc-shell__nav-step {
+	margin-left: auto;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 20px;
+	height: 20px;
+	border-radius: 10px;
+	color: #949494;
+	font-size: 12px;
+
+	&--done {
+		background: $accent;
+		color: #fff;
+
+		svg {
+			fill: #fff;
+		}
+	}
+}
+
+.rc-page__title--large {
+	font-size: 30px;
+	margin-bottom: 10px;
+}
+
+.rc-page__desc--wide {
+	max-width: 560px;
+	font-size: 15px;
+	color: #4a4a4a;
+}
+
+.rc-status--compact {
+	max-width: 620px;
+	margin-bottom: 8px;
+}
+
+.rc-status__icon--wait {
+	background: #949494;
+}
+
+.rc-actions {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	margin-top: 24px;
+}
+
+.rc-panel {
+	max-width: 620px;
+	padding: 24px;
+	border: 1px solid $border;
+	border-radius: 8px;
+
+	+ .rc-panel {
+		margin-top: 16px;
+	}
+
+	h5 {
+		margin: 0 0 6px;
+		font-size: 15px;
+		font-weight: 600;
+	}
+
+	p {
+		margin: 0;
+		color: $muted;
+	}
+
+	.rc-actions {
+		margin-top: 16px;
+	}
+}
+
+.rc-banner {
+	display: flex;
+	gap: 12px;
+	max-width: 620px;
+	margin: 0 0 20px;
+	padding: 12px 16px;
+	border-left: 4px solid $accent;
+	background: #f0f3fe;
+
+	a {
+		color: $accent;
+	}
+
+	&--error {
+		border-left-color: #cc1818;
+		background: #fcf0f1;
+	}
+}

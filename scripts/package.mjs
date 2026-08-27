@@ -8,9 +8,9 @@
  *
  * Run `pnpm run build` first; build/ must exist.
  *
- * The staging API base is not in the repo (public). Put it in a gitignored .env at the repo root
- * (see .env.example) or export it in the shell:
- *   WC_REFERRALCANDY_STAGING_API_BASE=https://...
+ * Staging hosts are not in the repo (public). Every `define('WC_REFERRALCANDY_<X>_BASE', ...)`
+ * in the main file gets its staging value from env WC_REFERRALCANDY_STAGING_<X>_BASE — put them
+ * in a gitignored .env at the repo root (see .env.example) or export them in the shell.
  *
  * The staging flavor is the same code with (a) the three flavor defines at the top of the main
  * plugin file swapped, and (b) PHP class/function/constant names suffixed so it can be active
@@ -38,8 +38,46 @@ try {
 } catch {
 	// no .env file
 }
-const STAGING_API_BASE = process.env.WC_REFERRALCANDY_STAGING_API_BASE;
 const MAIN = 'woocommerce-referralcandy.php';
+const mainSource = readFileSync( join( ROOT, MAIN ), 'utf8' );
+
+/**
+ * One replacement per *_BASE define, value from the environment. Fails loudly if any is missing:
+ * a staging zip that silently talks to production is the worst outcome.
+ */
+function stagingBaseReplacements() {
+	const defines = [
+		...mainSource.matchAll(
+			/^define\('WC_REFERRALCANDY_([A-Z_]+_BASE)', '[^']*'\);$/gm
+		),
+	];
+	const missing = [];
+	const pairs = [];
+
+	for ( const match of defines ) {
+		const envName = `WC_REFERRALCANDY_STAGING_${ match[ 1 ] }`;
+		const value = process.env[ envName ];
+		if ( ! /^https:\/\/[^'\s]+$/.test( value || '' ) ) {
+			missing.push( envName );
+			continue;
+		}
+		pairs.push( [
+			match[ 0 ],
+			`define('WC_REFERRALCANDY_${ match[ 1 ] }', '${ value }');`,
+		] );
+	}
+
+	if ( missing.length ) {
+		console.error(
+			`Missing or not an https URL: ${ missing.join(
+				', '
+			) }. Add them to .env (see .env.example) or export them.`
+		);
+		process.exit( 1 );
+	}
+
+	return pairs;
+}
 
 // Files that ship. Keep in sync with .distignore (the WordPress.org deploy path).
 const SHIPPED = [ MAIN, 'readme.txt', 'includes', 'build', 'languages' ];
@@ -60,10 +98,6 @@ const FLAVORS = {
 			[
 				"define('WC_REFERRALCANDY_LABEL', 'ReferralCandy');",
 				"define('WC_REFERRALCANDY_LABEL', 'ReferralCandy (Staging)');",
-			],
-			[
-				"define('WC_REFERRALCANDY_API_BASE', 'https://my.referralcandy.com/api/v1');",
-				`define('WC_REFERRALCANDY_API_BASE', '${ STAGING_API_BASE }');`,
 			],
 			[
 				/^ \* Plugin Name: .*$/m,
@@ -97,16 +131,6 @@ if ( ! flavor ) {
 }
 
 if (
-	flavorName === 'staging' &&
-	! /^https:\/\/[^'\s]+$/.test( STAGING_API_BASE || '' )
-) {
-	console.error(
-		'WC_REFERRALCANDY_STAGING_API_BASE is not set (or not an https URL). Add it to .env (see .env.example) or export it.'
-	);
-	process.exit( 1 );
-}
-
-if (
 	! existsSync( join( ROOT, 'build', 'index.js' ) ) ||
 	! existsSync( join( ROOT, 'build', 'index.asset.php' ) )
 ) {
@@ -114,9 +138,13 @@ if (
 	process.exit( 1 );
 }
 
-const version = readFileSync( join( ROOT, MAIN ), 'utf8' )
-	.match( /^ \* Version: (.+)$/m )[ 1 ]
-	.trim();
+const version = mainSource.match( /^ \* Version: (.+)$/m )[ 1 ].trim();
+
+// *_BASE defines are swapped per environment; the rest of the map is static.
+const replacements =
+	flavorName === 'staging'
+		? [ ...stagingBaseReplacements(), ...flavor.replacements ]
+		: flavor.replacements;
 
 function walk( path ) {
 	return statSync( path ).isDirectory()
@@ -131,7 +159,7 @@ function transform( relPath, contents ) {
 
 	let text = contents.toString( 'utf8' );
 
-	for ( const [ from, to ] of flavor.replacements ) {
+	for ( const [ from, to ] of replacements ) {
 		if ( typeof from === 'string' && ! text.includes( from ) ) {
 			continue;
 		}
@@ -158,7 +186,7 @@ if ( flavorName !== 'production' ) {
 		.getEntry( `${ flavor.folder }/${ MAIN }` )
 		.getData()
 		.toString( 'utf8' );
-	for ( const [ from ] of flavor.replacements ) {
+	for ( const [ from ] of replacements ) {
 		if ( typeof from === 'string' && main.includes( from ) ) {
 			console.error( `Replacement did not apply: ${ from }` );
 			process.exit( 1 );
