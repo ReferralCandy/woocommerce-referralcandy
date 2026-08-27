@@ -4,7 +4,7 @@ Contributors: referralcandy
 Tags: referral program, customer referral program, referral software, refer-a-friend, affiliate program, referral, word-of-mouth, referral marketing, affiliate, affiliate marketing, affiliate manager, woo commerce
 Requires at least: 6.4
 Requires PHP: 7.4
-Tested up to: 6.9.1
+Tested up to: 7.1
 Stable tag: trunk
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -90,6 +90,7 @@ We maintain a list of FAQs on our [help page](https://help.referralcandy.com/)!
 
 = 2.5.6 =
 * Update plugin branding: new logo, icons, banners, and screenshots
+* Tested up to WordPress 7.1
 
 = 2.5.5 =
 * Fix "accepts marketing" field support on checkout

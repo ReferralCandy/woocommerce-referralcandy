@@ -9,7 +9,7 @@
  * Version: 2.5.6
  * Requires at least: 6.4
  * Requires PHP: 7.4
- * Tested up to: 6.9.1
+ * Tested up to: 7.1
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
