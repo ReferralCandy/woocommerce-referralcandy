@@ -4,7 +4,7 @@
  *
  *   node scripts/package.mjs production   -> dist/woocommerce-referralcandy-3.0.0.zip
  *   node scripts/package.mjs staging      -> dist/woocommerce-referralcandy-3.0.0-staging.zip
- *                                            (plugin folder inside: referralcandy-for-woocommerce)
+ *                                            (plugin folder inside: woocommerce-referralcandy-staging)
  *
  * Run `pnpm run build` first; build/ must exist.
  *
@@ -50,7 +50,7 @@ const FLAVORS = {
 		replacements: [],
 	},
 	staging: {
-		folder: 'referralcandy-for-woocommerce',
+		folder: 'woocommerce-referralcandy-staging',
 		replacements: [
 			// Flavor defines (main file).
 			[
