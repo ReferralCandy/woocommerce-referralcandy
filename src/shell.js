@@ -42,7 +42,7 @@ function NavItem( {
 	);
 }
 
-function SetupNav( { sub, signupStarted, navigate } ) {
+function SetupNav( { sub, accountExists, connected, navigate } ) {
 	// The last step depends on which way the merchant went. Connecting through WooCommerce
 	// ends at ReferralCandy's plan picker and never asks for a key, so promising "Enter API
 	// keys" to everyone advertises a chore most merchants will never do — and it is the step
@@ -53,14 +53,17 @@ function SetupNav( { sub, signupStarted, navigate } ) {
 			key: 'create',
 			label: __( 'Create account', 'woocommerce-referralcandy' ),
 			active: ! sub,
-			done: signupStarted,
+			// From what ReferralCandy says, not from the merchant having clicked. Ticking on
+			// the click means someone who cancelled at the approval screen comes back to two
+			// completed steps and no way to tell what actually happened.
+			done: accountExists,
 			to: '/setup',
 		},
 		{
 			key: 'approve',
 			label: __( 'Approve access', 'woocommerce-referralcandy' ),
 			active: false,
-			done: signupStarted,
+			done: connected,
 		},
 		enteringKeys
 			? {
@@ -131,7 +134,8 @@ export default function Shell( {
 	navigate,
 	pageTitle,
 	headerAction,
-	signupStarted,
+	accountExists,
+	connected,
 	children,
 } ) {
 	const inSettings = section === 'settings';
@@ -153,7 +157,8 @@ export default function Shell( {
 				{ inSetup && (
 					<SetupNav
 						sub={ sub }
-						signupStarted={ signupStarted }
+						accountExists={ accountExists }
+						connected={ connected }
 						navigate={ navigate }
 					/>
 				) }

@@ -93,6 +93,15 @@ export const GROUPS = [
 const CONNECTION_FIELDS = new Set( [ 'api_id', 'secret_key' ] );
 
 /**
+ * Settings that only matter when the plugin is the one sending orders.
+ *
+ * A platform-connected store has ReferralCandy read its orders directly, and
+ * `RC_Order::submit_purchase()` returns early, so the order status is wired to nothing.
+ * Leaving it on screen tells a merchant they can control ingestion from here. They cannot.
+ */
+const PUSH_ONLY_FIELDS = new Set( [ 'order_status' ] );
+
+/**
  * @param {Object}  fields            Field schema from PHP.
  * @param {boolean} platformConnected Store connected through wc-auth, which grants
  *                                    ReferralCandy the store's own WooCommerce credentials.
@@ -102,8 +111,28 @@ const CONNECTION_FIELDS = new Set( [ 'api_id', 'secret_key' ] );
  */
 export function groupsFor( fields, platformConnected = false ) {
 	const groups = platformConnected
-		? GROUPS.map( ( group ) =>
-				group.key === 'connection'
+		? GROUPS.map( ( group ) => {
+				if ( group.key === 'orders' ) {
+					return {
+						...group,
+						title: __( 'Tracking', 'woocommerce-referralcandy' ),
+						description: __(
+							'Where the ReferralCandy tracking code renders. ReferralCandy reads your orders directly, so there is nothing to configure about sending them.',
+							'woocommerce-referralcandy'
+						),
+						fields: group.fields.filter(
+							( key ) => ! PUSH_ONLY_FIELDS.has( key )
+						),
+						tips: [
+							__(
+								'The tracking code always renders on the order-received page; the selected page is an extra location.',
+								'woocommerce-referralcandy'
+							),
+						],
+					};
+				}
+
+				return group.key === 'connection'
 					? {
 							...group,
 							title: __(
@@ -124,12 +153,15 @@ export function groupsFor( fields, platformConnected = false ) {
 								),
 							],
 					  }
-					: group
-		  )
+					: group;
+		  } )
 		: GROUPS;
 	const known = new Set( groups.flatMap( ( g ) => g.fields ) );
+	const hidden = ( key ) =>
+		platformConnected &&
+		( CONNECTION_FIELDS.has( key ) || PUSH_ONLY_FIELDS.has( key ) );
 	const other = Object.keys( fields ).filter(
-		( k ) => ! known.has( k ) && ! ( platformConnected && CONNECTION_FIELDS.has( k ) )
+		( k ) => ! known.has( k ) && ! hidden( k )
 	);
 
 	return other.length

@@ -124,7 +124,13 @@ if (!class_exists('RC_Api')) {
          */
         public static function store_exists($store_url)
         {
-            $cached = get_transient(self::STORE_EXISTS_TRANSIENT);
+            // Keyed by the URL asked about. The same store can be seen under more than one
+            // address — the tunnel host in a browser request, localhost in a loopback or a
+            // cron run — and a shared key lets the answer for one poison the other, which
+            // shows up as the plugin insisting a store has no account when it plainly does.
+            $key = self::STORE_EXISTS_TRANSIENT . '_' . md5(strtolower(trim((string) $store_url)));
+
+            $cached = get_transient($key);
             if (is_array($cached) && array_key_exists('exists', $cached)) {
                 return $cached['exists'];
             }
@@ -141,7 +147,7 @@ if (!class_exists('RC_Api')) {
             // them the wrong screen and no amount of reloading fixes it. An unknown answer is
             // retried sooner still.
             set_transient(
-                self::STORE_EXISTS_TRANSIENT,
+                $key,
                 ['exists' => $exists],
                 $exists === null ? MINUTE_IN_SECONDS : 2 * MINUTE_IN_SECONDS
             );
@@ -161,10 +167,10 @@ if (!class_exists('RC_Api')) {
          * @param array  $proof     ['ticket' => string] or ['statusToken' => string].
          * @param string $store_url This store's own URL.
          *
-         * @return array|null ['connected' => bool, 'statusToken' => string|null,
-         *                    'appId' => string|null], or null when the answer could not be
-         *                    obtained — which callers must treat as "unchanged", never as
-         *                    "not connected".
+         * @return array Always has 'outcome': 'ok' with the answer, 'unreachable' when
+         *               ReferralCandy could not be reached, or 'rejected' when it refused the
+         *               proof. Only 'ok' carries a verdict; the other two must be treated as
+         *               "unchanged", never as "not connected".
          */
         public static function connection_status(array $proof, $store_url)
         {
@@ -174,11 +180,19 @@ if (!class_exists('RC_Api')) {
                 array_merge($proof, ['storeUrl' => $store_url])
             );
 
-            if (is_wp_error($result) || $result['code'] !== 200 || !isset($result['body']['connected'])) {
-                return null;
+            // Three different failures, told apart because they need different answers from
+            // the merchant. Unreachable means try again; rejected means the proof is dead and
+            // trying again with it will never work.
+            if (is_wp_error($result)) {
+                return ['outcome' => 'unreachable'];
+            }
+
+            if ($result['code'] !== 200 || !isset($result['body']['connected'])) {
+                return ['outcome' => 'rejected'];
             }
 
             return [
+                'outcome'     => 'ok',
                 'connected'   => (bool) $result['body']['connected'],
                 'statusToken' => isset($result['body']['statusToken'])
                     ? (string) $result['body']['statusToken']

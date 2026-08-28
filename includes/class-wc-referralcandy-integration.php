@@ -91,12 +91,14 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                     'desc_tip' => false,
                     'default' => ''
                 ],
-                'app_id' => [
+                // Read-only once the connection supplies it: a merchant retyping this breaks
+                // their own tracking script, and nothing here is theirs to choose.
+                'app_id' => array_merge([
                     'title' => __('App ID', 'woocommerce-referralcandy'),
                     'type' => 'text',
                     'desc_tip' => false,
                     'default' => ''
-                ],
+                ], $this->has_platform_connection() ? ['readonly' => true] : []),
                 'secret_key' => [
                     'title' => __('Secret key', 'woocommerce-referralcandy'),
                     'type' => 'text',
@@ -547,12 +549,17 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 ];
             }
 
-            $checks[] = [
-                'id'      => 'order_status',
-                'label'   => __('Order status', 'woocommerce-referralcandy'),
-                'ok'      => in_array($this->get_option('order_status'), array_keys(wc_get_order_statuses()), true),
-                'message' => __('Re-select the order status that should be sent to ReferralCandy and save.', 'woocommerce-referralcandy'),
-            ];
+            // Only meaningful when this plugin is the one sending orders. A platform-connected
+            // store has them read directly, so checking the setting would report on something
+            // that cannot affect anything.
+            if (!$platform_connected) {
+                $checks[] = [
+                    'id'      => 'order_status',
+                    'label'   => __('Order status', 'woocommerce-referralcandy'),
+                    'ok'      => in_array($this->get_option('order_status'), array_keys(wc_get_order_statuses()), true),
+                    'message' => __('Re-select the order status that should be sent to ReferralCandy and save.', 'woocommerce-referralcandy'),
+                ];
+            }
 
             return $checks;
         }

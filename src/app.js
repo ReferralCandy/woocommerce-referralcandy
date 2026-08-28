@@ -44,6 +44,8 @@ export default function App( { config } ) {
 	const [ onboarding, setOnboarding ] = useState( null );
 	const [ starting, setStarting ] = useState( false );
 	const [ skipSetup, setSkipSetup ] = useState( false );
+	/** { proof, failed? } while a returning merchant's ticket is being exchanged. */
+	const [ connecting, setConnecting ] = useState( null );
 
 	const [ section = 'overview', sub ] = route;
 	// A wc-auth connected store granted ReferralCandy its own WooCommerce credentials and
@@ -58,6 +60,9 @@ export default function App( { config } ) {
 	/**
 	 * ReferralCandy appends the signup ticket to the URL it returns the merchant to. Exchange
 	 * it once, server-side, then drop it from the address bar so a reload cannot replay it.
+	 *
+	 * The ticket is kept in state as well, because stripping the URL means a reload cannot
+	 * retry: if the exchange fails, the retry has to come from here.
 	 */
 	useEffect( () => {
 		const params = new URLSearchParams( window.location.search );
@@ -79,22 +84,55 @@ export default function App( { config } ) {
 				window.location.hash
 		);
 
+		setConnecting( { proof: ticket ? { ticket } : { statusToken } } );
+	}, [] );
+
+	/** Runs the exchange, and again if the merchant retries a failed one. */
+	useEffect( () => {
+		if ( ! connecting?.proof || connecting.failed ) return;
+
 		apiFetch( {
 			path: `${ config.onboardingPath }/connection`,
 			method: 'POST',
-			data: ticket ? { ticket } : { statusToken },
+			data: connecting.proof,
 		} )
 			.then( ( result ) => {
 				if ( ! result.connected ) {
+					// Anything other than "you have not paid yet" means the approval did not
+					// produce a connection. The merchant just clicked Approve, so silence
+					// here reads as the plugin losing their work — but what to offer them
+					// depends on why, and retrying a dead ticket never succeeds.
+					setConnecting(
+						result.reason === 'setup_incomplete'
+							? null
+							: ( current ) => ( {
+									...current,
+									failed:
+										result.outcome === 'unreachable'
+											? 'unreachable'
+											: 'rejected',
+							  } )
+					);
+
 					if ( result.reason === 'setup_incomplete' ) {
 						// The store is attached, but its owner stopped before choosing a
-						// plan. Point them back at the account they already have.
+						// plan. Send them to the plan picker: telling them to "reload" is
+						// telling them to repeat the thing that did not work.
 						setNotice( {
 							status: 'warning',
 							message: __(
-								'Your store is linked, but your ReferralCandy account still needs a plan before referrals can run. Finish setting it up, then reload this page.',
+								'Your store is linked, but your ReferralCandy account still needs a plan before referrals can run.',
 								'woocommerce-referralcandy'
 							),
+							actions: [
+								{
+									label: __(
+										'Choose a plan',
+										'woocommerce-referralcandy'
+									),
+									url: config.links.plans,
+								},
+							],
 						} );
 					}
 					return;
@@ -105,6 +143,7 @@ export default function App( { config } ) {
 					( refreshed ) => {
 						setData( refreshed );
 						setDraft( refreshed.values );
+						setConnecting( null );
 						setNotice( {
 							status: 'success',
 							message: __(
@@ -115,10 +154,16 @@ export default function App( { config } ) {
 					}
 				);
 			} )
-			.catch( ( e ) =>
-				setNotice( { status: 'error', message: e.message } )
+			.catch( () =>
+				// The plugin's own REST call failed, so this never reached ReferralCandy.
+				// Kept, not cleared: the URL no longer holds the ticket, so this state is the
+				// only thing that can offer a retry.
+				setConnecting( ( current ) => ( {
+					...current,
+					failed: 'unreachable',
+				} ) )
 			);
-	}, [ config.onboardingPath, config.restPath ] );
+	}, [ connecting, config.onboardingPath, config.restPath ] );
 
 	useEffect( () => {
 		apiFetch( { path: config.restPath } )
@@ -134,14 +179,26 @@ export default function App( { config } ) {
 			);
 	}, [ config.restPath ] );
 
-	// Setup gate: without keys the app opens on the wizard; with keys the wizard is gone.
+	// A failed exchange must not trap the merchant. It holds the whole screen, so navigating
+	// anywhere is them saying they are done with it — the ticket is dead either way, and the
+	// setup screens can still connect the store.
 	useEffect( () => {
+		if ( connecting?.failed ) setConnecting( null );
+		// Only when the route changes, hence the deliberately narrow dependency list.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [ section, sub ] );
+
+	// Setup gate: without keys the app opens on the wizard; with keys the wizard is gone.
+	// Suspended while a ticket is in flight — the merchant is mid-connection, and bouncing
+	// them into the wizard would show setup steps they are in the middle of completing.
+	useEffect( () => {
+		if ( connecting ) return;
 		if ( ! connected && ! skipSetup && section !== 'setup' ) {
 			navigate( '/setup' );
 		} else if ( connected && section === 'setup' ) {
 			navigate( '/' );
 		}
-	}, [ connected, skipSetup, section, navigate ] );
+	}, [ connected, skipSetup, section, navigate, connecting ] );
 
 	useEffect( () => {
 		if ( section === 'setup' && ! onboarding ) {
@@ -268,7 +325,75 @@ export default function App( { config } ) {
 	let pageTitle = '';
 	let headerAction = null;
 
-	if ( ! data ) {
+	if ( connecting ) {
+		// A merchant who just approved access is watching this. Anything else on screen —
+		// least of all "enter your API keys", which this kind of store never has — reads as
+		// the connection having failed.
+		pageTitle = __( 'Connecting', 'woocommerce-referralcandy' );
+		page = connecting.failed ? (
+			<div className="rc-content">
+				<h1 className="rc-page__title">
+					{ __(
+						'Could not confirm the connection',
+						'woocommerce-referralcandy'
+					) }
+				</h1>
+				<p className="rc-page__desc">
+					{ connecting.failed === 'unreachable'
+						? __(
+								'Your store approved access, but ReferralCandy could not be reached to confirm it. Nothing is lost — try again.',
+								'woocommerce-referralcandy'
+						  )
+						: __(
+								'This connection link is no longer valid. Links expire a few minutes after they are issued, and each one can be used once. Approving access again takes a moment and creates nothing new.',
+								'woocommerce-referralcandy'
+						  ) }
+				</p>
+				<div className="rc-actions">
+					{ connecting.failed === 'unreachable' ? (
+						<Button
+							variant="primary"
+							onClick={ () =>
+								setConnecting( ( current ) => ( {
+									proof: current.proof,
+								} ) )
+							}
+						>
+							{ __(
+								'Try again',
+								'woocommerce-referralcandy'
+							) }
+						</Button>
+					) : (
+						<Button
+							variant="primary"
+							isBusy={ starting }
+							disabled={ starting }
+							onClick={ () => {
+								setConnecting( null );
+								startSignup();
+							} }
+						>
+							{ __(
+								'Restart connection',
+								'woocommerce-referralcandy'
+							) }
+						</Button>
+					) }
+				</div>
+			</div>
+		) : (
+			<div className="rc-content">
+				<Spinner />
+				<p className="rc-page__desc">
+					{ __(
+						'Connecting your store…',
+						'woocommerce-referralcandy'
+					) }
+				</p>
+			</div>
+		);
+	} else if ( ! data ) {
 		page = notice ? (
 			<Notice status={ notice.status } isDismissible={ false }>
 				{ notice.message }
@@ -362,13 +487,19 @@ export default function App( { config } ) {
 			navigate={ navigate }
 			pageTitle={ pageTitle }
 			headerAction={ headerAction }
-			signupStarted={ Boolean( onboarding?.signupStartedAt ) }
+			accountExists={
+				connected || onboarding?.storeExists === true
+			}
+			connected={ connected }
 		>
 			{ notice && data && (
 				<Notice
 					status={ notice.status }
 					onRemove={ () => setNotice( null ) }
 					className="rc-notice"
+					{ ...( notice.actions
+						? { actions: notice.actions }
+						: {} ) }
 				>
 					{ notice.message }
 				</Notice>

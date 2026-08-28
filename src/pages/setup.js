@@ -60,6 +60,11 @@ function CreateAccount( { onboarding, links, starting, onStart, navigate } ) {
 					) }
 				</p>
 
+				<ResumeBanner
+					minutes={ startedMinutesAgo( onboarding ) }
+					links={ links }
+				/>
+
 				<ul className="rc-status rc-status--compact">
 					<Check
 						ok={ onboarding.https }
@@ -196,6 +201,11 @@ function ExistingAccount( { onboarding, links, starting, onStart, navigate } ) {
 					) }
 				</p>
 
+				<ResumeBanner
+					minutes={ startedMinutesAgo( onboarding ) }
+					links={ links }
+				/>
+
 				<div className="rc-panel">
 					<h5>
 						{ __(
@@ -316,8 +326,9 @@ function ExistingAccount( { onboarding, links, starting, onStart, navigate } ) {
 	);
 }
 
-function EnterKeys( { onboarding, fields, values, onChange, links, onSkip } ) {
-	const startedMinutes = onboarding?.signupStartedAt
+/** Minutes since this store began a signup, or null if it never did. */
+function startedMinutesAgo( onboarding ) {
+	return onboarding?.signupStartedAt
 		? Math.max(
 				1,
 				Math.round(
@@ -325,6 +336,42 @@ function EnterKeys( { onboarding, fields, values, onChange, links, onSkip } ) {
 				)
 		  )
 		: null;
+}
+
+/**
+ * Tells a merchant who wandered off mid-signup where they were.
+ *
+ * Without it, someone who bailed at the plan picker and came back the next day is shown a
+ * pristine "Create your ReferralCandy account", which invites them to start a second signup
+ * for a store that is already half way through one.
+ */
+function ResumeBanner( { minutes, links } ) {
+	if ( minutes === null ) return null;
+
+	return (
+		<div className="rc-banner">
+			<div>
+				<strong>
+					{ __( 'Welcome back.', 'woocommerce-referralcandy' ) }
+				</strong>{ ' ' }
+				{ sprintf(
+					/* translators: %d: minutes */
+					__(
+						'You started connecting this store %d min ago. Carry on below, or finish in ReferralCandy —',
+						'woocommerce-referralcandy'
+					),
+					minutes
+				) }{ ' ' }
+				<a href={ links.dashboard } target="_blank" rel="noreferrer">
+					{ __( 'open it ↗', 'woocommerce-referralcandy' ) }
+				</a>
+			</div>
+		</div>
+	);
+}
+
+function EnterKeys( { onboarding, fields, values, onChange, links, onSkip } ) {
+	const startedMinutes = startedMinutesAgo( onboarding );
 
 	return (
 		<>

@@ -43,6 +43,26 @@ function Control( { id, field, value, onChange } ) {
 		);
 	}
 
+	// Read-only rather than absent: the merchant should be able to see the identifier their
+	// tracking script is named after, and to notice when it is missing — but a value the
+	// connection supplies is not theirs to retype, and a typo here silently breaks tracking.
+	if ( field.readonly ) {
+		return (
+			<TextControl
+				label={ title }
+				hideLabelFromVision
+				value={ value }
+				readOnly
+				onChange={ () => {} }
+				help={ __(
+					'Set automatically when your store connected.',
+					'woocommerce-referralcandy'
+				) }
+				__nextHasNoMarginBottom
+			/>
+		);
+	}
+
 	return (
 		<TextControl
 			label={ title }

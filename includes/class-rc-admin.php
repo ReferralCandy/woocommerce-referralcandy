@@ -31,6 +31,8 @@ if (!class_exists('RC_Admin')) {
         const PLATFORM_TOKEN_OPTION = 'wc_referralcandy_platform_token';
         const PLATFORM_CAMPAIGNS_OPTION = 'wc_referralcandy_platform_campaigns';
         const PLATFORM_CHECKED_TRANSIENT = 'wc_referralcandy_platform_checked';
+        /** Floor under forced checks, so reloading cannot hammer ReferralCandy. */
+        const PLATFORM_FORCED_TRANSIENT = 'wc_referralcandy_platform_forced';
         /**
          * How long a "still connected?" answer is trusted before it is asked again.
          *
@@ -168,6 +170,7 @@ if (!class_exists('RC_Admin')) {
                     'signup'       => $this->app_url('/signup/woocommerce'),
                     'login'        => $this->app_url('/login'),
                     'dashboard'    => $this->app_url('/'),
+                    'plans'        => $this->app_url('/plan-select'),
                     'integrations' => $this->app_url('/integrations/woocommerce'),
                     'guide'        => 'https://www.referralcandy.com/blog/woocommerce-setup?utm_source=woocommerce-plugin&utm_medium=plugin&utm_campaign=woocommerce-integration-blog',
                     'help'         => 'https://help.referralcandy.com/',
@@ -510,8 +513,9 @@ if (!class_exists('RC_Admin')) {
 
             $status = RC_Api::connection_status(['statusToken' => $token], $this->store_url());
 
-            if ($status === null) {
-                // Unknown, not disconnected. Retry sooner than a real answer.
+            if ($status['outcome'] !== 'ok') {
+                // Unknown, not disconnected — an outage must never look like a merchant
+                // losing their connection. Retry sooner than a real answer.
                 set_transient(self::PLATFORM_CHECKED_TRANSIENT, 1, 5 * MINUTE_IN_SECONDS);
                 return;
             }
@@ -540,9 +544,16 @@ if (!class_exists('RC_Admin')) {
 
         // ---- Onboarding -------------------------------------------------------------------
 
+        /**
+         * The store's address as ReferralCandy knows it: no trailing slash.
+         *
+         * `home_url('/')` adds one, and the existence lookup matches the stored URL exactly —
+         * so with a slash a store that plainly has an account reads as having none, and the
+         * merchant is offered a second signup for a store they already registered.
+         */
         private function store_url()
         {
-            return home_url('/');
+            return untrailingslashit(home_url());
         }
 
         public function get_onboarding()
@@ -580,7 +591,10 @@ if (!class_exists('RC_Admin')) {
             $result = RC_Api::main_api('POST', '/commerce-platform/woocommerce/wc-auth/signup/start', [
                 'storeUrl' => $store_url,
                 // Where ReferralCandy sends the merchant after payment (once rc-main supports it).
-                'returnTo' => admin_url(WC_REFERRALCANDY_ADMIN_URL . '#/setup/keys'),
+                // Not the keys step: a store that finishes this flow has no keys to enter,
+                // and landing there flashes "enter your API keys" at a merchant who has none.
+                // The app reads the ticket from the URL and shows its own connecting state.
+                'returnTo' => admin_url(WC_REFERRALCANDY_ADMIN_URL),
             ]);
 
             if (is_wp_error($result)) {
@@ -642,17 +656,27 @@ if (!class_exists('RC_Admin')) {
 
             $proof = $ticket !== '' ? ['ticket' => $ticket] : ['statusToken' => $token];
             $status = RC_Api::connection_status($proof, $this->store_url());
-            $connected = is_array($status) && $status['connected'];
+            $answered = $status['outcome'] === 'ok';
+            $connected = $answered && $status['connected'];
 
             if ($connected) {
                 $this->remember_connection($status['statusToken'], $status['appId'], $status['campaigns']);
+            } elseif ($answered && $status['reason'] === 'setup_incomplete' && $status['statusToken']) {
+                // The store is linked; its owner just has not paid yet. Keep the token even
+                // though the flag stays off, or the merchant is stranded: without it the
+                // re-check bails on an empty token, and approving access again lands them
+                // right back here.
+                update_option(self::PLATFORM_TOKEN_OPTION, $status['statusToken'], false);
+                delete_transient(self::PLATFORM_CHECKED_TRANSIENT);
             }
 
             return rest_ensure_response([
                 'connected' => $connected,
                 // Lets the app say "finish your ReferralCandy setup" instead of offering to
                 // start a signup the merchant has already half done.
-                'reason'    => is_array($status) ? $status['reason'] : null,
+                'reason'    => $answered ? $status['reason'] : null,
+                // And lets it tell a merchant worth retrying from one holding a dead ticket.
+                'outcome'   => $status['outcome'],
             ]);
         }
 
@@ -671,7 +695,12 @@ if (!class_exists('RC_Admin')) {
             // is already on screen, and this either confirms it or quietly corrects it. Forced
             // is the merchant pressing Refresh because they just changed something and want to
             // see it now, so the interval does not apply to them.
-            if ($request->get_param('force')) {
+            // Forcing skips the five-minute interval, not every guard. Opening the screen is
+            // the merchant asking, but a reload loop is not thirty separate askings — and
+            // ReferralCandy caps this route per store, so an unchecked force would turn rapid
+            // reloads into 429s that are silently swallowed here.
+            if ($request->get_param('force') && !get_transient(self::PLATFORM_FORCED_TRANSIENT)) {
+                set_transient(self::PLATFORM_FORCED_TRANSIENT, 1, 30);
                 delete_transient(self::PLATFORM_CHECKED_TRANSIENT);
             }
 

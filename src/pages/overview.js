@@ -82,8 +82,29 @@ export default function Overview( {
 		? '/settings/orders'
 		: '/settings/connection';
 
+	// A freshly connected store usually fails exactly one check, and no settings page can fix
+	// it: the campaign has to be started at ReferralCandy. Sending them to Settings here is
+	// the moment they decide whether this plugin works, so it has to point at the real
+	// next step.
+	const failing = status.filter( ( s ) => ! s.ok );
+	const onlyNeedsCampaign =
+		failing.length === 1 && failing[ 0 ].id === 'campaign_active';
+
 	let hero;
-	if ( ! hasKeys ) {
+	if ( onlyNeedsCampaign ) {
+		hero = {
+			title: __(
+				'Connected. Now launch a campaign.',
+				'woocommerce-referralcandy'
+			),
+			text: __(
+				'Your store is talking to ReferralCandy, but no campaign is running yet, so nothing is being sent to your customers.',
+				'woocommerce-referralcandy'
+			),
+			cta: __( 'Launch a campaign', 'woocommerce-referralcandy' ),
+			href: links.dashboard,
+		};
+	} else if ( ! hasKeys ) {
 		hero = {
 			title: __(
 				'Finish connecting your store.',
@@ -130,12 +151,23 @@ export default function Overview( {
 					<h1>{ hero.title }</h1>
 					<p>{ hero.text }</p>
 					<div className="rc-hero__actions">
-						<Button
-							variant="primary"
-							onClick={ () => navigate( hero.to ) }
-						>
-							{ hero.cta }
-						</Button>
+						{ hero.href ? (
+							<Button
+								variant="primary"
+								href={ hero.href }
+								target="_blank"
+								rel="noreferrer"
+							>
+								{ hero.cta }
+							</Button>
+						) : (
+							<Button
+								variant="primary"
+								onClick={ () => navigate( hero.to ) }
+							>
+								{ hero.cta }
+							</Button>
+						) }
 						<Button
 							variant="link"
 							href={ links.dashboard }
@@ -154,10 +186,17 @@ export default function Overview( {
 					{ __( 'Integration status', 'woocommerce-referralcandy' ) }
 				</h2>
 				<p className="rc-page__desc">
-					{ __(
-						'Everything the plugin needs to send orders to ReferralCandy.',
-						'woocommerce-referralcandy'
-					) }
+					{ /* Two calls, not a ternary inside __(): a computed string cannot be
+					     extracted for translation. */ }
+					{ platformConnected
+						? __(
+								'Everything ReferralCandy needs to read this store and reward referrals.',
+								'woocommerce-referralcandy'
+						  )
+						: __(
+								'Everything the plugin needs to send orders to ReferralCandy.',
+								'woocommerce-referralcandy'
+						  ) }
 				</p>
 				<ul className="rc-status">
 					{ status.map( ( s ) => (
