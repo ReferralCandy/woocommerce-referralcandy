@@ -6,6 +6,9 @@
     "scripts": {
         "build": "wp-scripts build",
         "watch": "wp-scripts start",
+        "test": "wp-scripts test-unit-js",
+        "test:watch": "wp-scripts test-unit-js --watch",
+        "test:php": "wp-env run cli wp eval-file wp-content/plugins/woocommerce-referralcandy/tests/php/settings-test.php",
         "zip": "wp-scripts build && node scripts/package.mjs production",
         "zip:staging": "wp-scripts build && node scripts/package.mjs staging",
         "start": "wp-env start",

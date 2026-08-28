@@ -141,15 +141,13 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                     'desc_tip' => false,
                     'default' => 'no'
                 ],
-                'popup_campaign_key' => [
-                    'title' => __('Campaign key', 'woocommerce-referralcandy'),
-                    'type' => 'text',
-                    'placeholder' => __('Paste campaign key', 'woocommerce-referralcandy'),
+                'popup_campaign_key' => array_merge([
+                    'title' => __('Campaign', 'woocommerce-referralcandy'),
                     'desc_tip' => true,
                     'description' => $popup_tooltip_content,
                     'default' => '',
                     'class' => 'popup-campaign-key-field'
-                ],
+                ], $this->campaign_field_shape()),
                 'popup_quickfix' => [
                     'title' => __('Post-purchase Popup Quickfix', 'woocommerce-referralcandy'),
                     'label' => __(
@@ -203,14 +201,23 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                         return $this->invalid_setting($label);
                     }
                 } else {
+                    $submitted = trim($value);
                     $value = sanitize_text_field($value);
 
-                    // sanitize_text_field keeps quotes and angle brackets stripped of tags,
-                    // which is not enough for values that end up inside a script URL or an
-                    // HTML attribute. These three are opaque identifiers issued by
+                    // sanitize_text_field keeps quotes, and reduces markup to an empty string,
+                    // neither of which is enough for values that end up inside a script URL or
+                    // an HTML attribute. These three are opaque identifiers issued by
                     // ReferralCandy, so anything outside their alphabet is a mistake or an
                     // attack, never a legitimate key.
-                    if (in_array($key, self::IDENTIFIER_FIELDS, true) && $value !== '' && !self::is_identifier($value)) {
+                    //
+                    // Compared against what was submitted, not against what survived
+                    // sanitising: `<script>` sanitises to '' and would otherwise be accepted
+                    // as "cleared", losing the merchant's input without telling them.
+                    if (
+                        in_array($key, self::IDENTIFIER_FIELDS, true)
+                        && $submitted !== ''
+                        && !self::is_identifier($value)
+                    ) {
                         return $this->invalid_setting($label);
                     }
                 }
@@ -380,6 +387,50 @@ if (!class_exists('WC_Referralcandy_Integration')) {
         }
 
         /**
+         * A picker when ReferralCandy has told us this store's campaigns, a text box otherwise.
+         *
+         * The key is not something a merchant should have to find: the old copy sent them to
+         * Campaigns > (campaign) > Widgets > Post-purchase Popup > WooCommerce integration to
+         * copy a string. A connected store already knows its campaigns, so it offers them by
+         * name — and a paused one says so, since picking it would leave the popup silent.
+         */
+        private function campaign_field_shape()
+        {
+            $campaigns = $this->platform_campaigns();
+
+            if (!$campaigns) {
+                return [
+                    'type'        => 'text',
+                    'placeholder' => __('Paste campaign key', 'woocommerce-referralcandy'),
+                ];
+            }
+
+            $options = ['' => __('Select a campaign', 'woocommerce-referralcandy')];
+            foreach ($campaigns as $campaign) {
+                $options[$campaign['key']] = $campaign['active']
+                    ? $campaign['name']
+                    /* translators: %s: campaign name */
+                    : sprintf(__('%s (not running)', 'woocommerce-referralcandy'), $campaign['name']);
+            }
+
+            return ['type' => 'select', 'options' => $options];
+        }
+
+        /**
+         * The campaigns ReferralCandy last reported for this store.
+         *
+         * @return array[]|null Null when nothing is known — never an empty list, because
+         *                      "we have not been told" and "there are none" mean different
+         *                      things to the checks below.
+         */
+        public function platform_campaigns()
+        {
+            $stored = get_option('wc_referralcandy_platform_campaigns', null);
+
+            return is_array($stored) && $stored !== [] ? $stored : null;
+        }
+
+        /**
          * Whether this store is connected to ReferralCandy through wc-auth.
          *
          * Such a store granted ReferralCandy its own WooCommerce credentials, and ReferralCandy
@@ -446,6 +497,24 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 'ok'      => !$this->is_option_enabled('popup') || !empty($this->get_option('popup_campaign_key')),
                 'message' => __('The post-purchase popup is enabled but has no campaign key.', 'woocommerce-referralcandy'),
             ];
+
+            // Connected, paid, and every campaign stopped still sends nothing — the third way
+            // this integration can look finished while doing nothing, and the one the plugin
+            // cannot see from inside WooCommerce. A fresh account's campaign starts stopped,
+            // so this is the common case rather than an edge one.
+            $campaigns = $this->platform_campaigns();
+            if ($platform_connected && $campaigns !== null) {
+                $active = array_filter($campaigns, function ($campaign) {
+                    return !empty($campaign['active']);
+                });
+
+                $checks[] = [
+                    'id'      => 'campaign_active',
+                    'label'   => __('Active campaign', 'woocommerce-referralcandy'),
+                    'ok'      => $active !== [],
+                    'message' => __('No campaign is running, so no referral emails will go out. Start one in your ReferralCandy dashboard.', 'woocommerce-referralcandy'),
+                ];
+            }
 
             $checks[] = [
                 'id'      => 'order_status',

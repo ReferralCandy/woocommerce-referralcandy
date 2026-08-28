@@ -136,7 +136,15 @@ if (!class_exists('RC_Api')) {
                 $exists = (bool) $result['body']['storeUrlExists'];
             }
 
-            set_transient(self::STORE_EXISTS_TRANSIENT, ['exists' => $exists], $exists === null ? MINUTE_IN_SECONDS : 10 * MINUTE_IN_SECONDS);
+            // Two minutes, not ten. This answer decides which setup screen a merchant sees, and
+            // it changes the moment they finish signing up somewhere else; a long cache shows
+            // them the wrong screen and no amount of reloading fixes it. An unknown answer is
+            // retried sooner still.
+            set_transient(
+                self::STORE_EXISTS_TRANSIENT,
+                ['exists' => $exists],
+                $exists === null ? MINUTE_IN_SECONDS : 2 * MINUTE_IN_SECONDS
+            );
 
             return $exists;
         }
@@ -180,6 +188,10 @@ if (!class_exists('RC_Api')) {
                 // 'setup_incomplete' when the store is attached but its owner never finished
                 // signing up. A plain no would send them to create a second account.
                 'reason'      => isset($result['body']['reason']) ? (string) $result['body']['reason'] : null,
+                // The merchant's campaigns: which exist, and which are actually running.
+                'campaigns'   => isset($result['body']['campaigns']) && is_array($result['body']['campaigns'])
+                    ? $result['body']['campaigns']
+                    : null,
             ];
         }
 

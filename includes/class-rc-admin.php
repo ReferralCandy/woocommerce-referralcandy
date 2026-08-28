@@ -29,6 +29,7 @@ if (!class_exists('RC_Admin')) {
         const SECRET_MASK = '********';
         const PLATFORM_CONNECTED_OPTION = 'wc_referralcandy_platform_connected';
         const PLATFORM_TOKEN_OPTION = 'wc_referralcandy_platform_token';
+        const PLATFORM_CAMPAIGNS_OPTION = 'wc_referralcandy_platform_campaigns';
         const PLATFORM_CHECKED_TRANSIENT = 'wc_referralcandy_platform_checked';
         /** How long a "still connected?" answer is trusted before it is asked again. */
         const PLATFORM_RECHECK_SECONDS = HOUR_IN_SECONDS;
@@ -351,13 +352,17 @@ if (!class_exists('RC_Admin')) {
             $integration->secret_key = $clean['secret_key'];
             RC_Api::forget_verification();
 
+            if ($integration->has_credentials()) {
+                delete_option(self::SIGNUP_STARTED_OPTION);
+            }
+
             return $this->response($clean);
         }
 
         /**
          * Persists a confirmed connection, with the token that lets it be re-checked later.
          */
-        private function remember_connection($status_token, $app_id = null)
+        private function remember_connection($status_token, $app_id = null, $campaigns = null)
         {
             update_option(self::PLATFORM_CONNECTED_OPTION, 1, false);
 
@@ -365,9 +370,51 @@ if (!class_exists('RC_Admin')) {
                 update_option(self::PLATFORM_TOKEN_OPTION, $status_token, false);
             }
 
+            $this->store_campaigns($campaigns);
             $this->store_app_id($app_id);
 
+            // The wizard ticks its first two steps off this. Left behind, it claims "account
+            // created, access approved" forever — including for a merchant who reset and is
+            // staring at step one.
+            delete_option(self::SIGNUP_STARTED_OPTION);
+
             set_transient(self::PLATFORM_CHECKED_TRANSIENT, 1, self::PLATFORM_RECHECK_SECONDS);
+        }
+
+        /**
+         * Saves the campaigns ReferralCandy reported for this store.
+         *
+         * Two things need them: the requirement check that notices a store whose campaigns are
+         * all paused or stopped — connected, paid, and still sending nothing — and the popup
+         * picker, which spares the merchant copying a key out of a dashboard by hand.
+         *
+         * Stored rather than fetched on render: the settings screen must not wait on
+         * ReferralCandy to draw a form, and the answer changes rarely.
+         */
+        private function store_campaigns($campaigns)
+        {
+            if (!is_array($campaigns)) {
+                return;
+            }
+
+            $clean = [];
+            foreach ($campaigns as $campaign) {
+                if (!is_array($campaign) || empty($campaign['key']) || !is_string($campaign['key'])) {
+                    continue;
+                }
+
+                if (!WC_Referralcandy_Integration::is_identifier($campaign['key'])) {
+                    continue;
+                }
+
+                $clean[] = [
+                    'key'    => $campaign['key'],
+                    'name'   => isset($campaign['name']) ? sanitize_text_field((string) $campaign['name']) : '',
+                    'active' => !empty($campaign['active']),
+                ];
+            }
+
+            update_option(self::PLATFORM_CAMPAIGNS_OPTION, $clean, false);
         }
 
         /**
@@ -461,11 +508,12 @@ if (!class_exists('RC_Admin')) {
                 }
 
                 delete_option(self::PLATFORM_TOKEN_OPTION);
+                delete_option(self::PLATFORM_CAMPAIGNS_OPTION);
                 delete_transient(self::PLATFORM_CHECKED_TRANSIENT);
                 return;
             }
 
-            $this->remember_connection($status['statusToken'], $status['appId']);
+            $this->remember_connection($status['statusToken'], $status['appId'], $status['campaigns']);
         }
 
         // ---- Onboarding -------------------------------------------------------------------
@@ -576,7 +624,7 @@ if (!class_exists('RC_Admin')) {
             $connected = is_array($status) && $status['connected'];
 
             if ($connected) {
-                $this->remember_connection($status['statusToken'], $status['appId']);
+                $this->remember_connection($status['statusToken'], $status['appId'], $status['campaigns']);
             }
 
             return rest_ensure_response([
