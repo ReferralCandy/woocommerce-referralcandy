@@ -71,7 +71,7 @@ function CreateAccount( { onboarding, links, starting, onStart, navigate } ) {
 							onboarding.https
 								? ''
 								: __(
-										'WooCommerce only hands out API access over HTTPS. For local development use the HTTPS tunnel (pnpm run dev).',
+										'WooCommerce only shares API access over a secure connection. Ask your host to enable HTTPS for this store, then reload this page.',
 										'woocommerce-referralcandy'
 								  )
 						}
@@ -168,7 +168,11 @@ function CreateAccount( { onboarding, links, starting, onStart, navigate } ) {
 	);
 }
 
-function ExistingAccount( { onboarding, links, navigate } ) {
+function ExistingAccount( { onboarding, links, starting, onStart, navigate } ) {
+	// The same approval that creates an account also proves this store to ReferralCandy, so
+	// a store already connected through WooCommerce can be recognised by running it again —
+	// it creates nothing the second time, and the plugin comes back knowing it is connected.
+	const canConnect = onboarding.https && onboarding.canAuthorize && ! starting;
 	return (
 		<>
 			<div className="rc-content">
@@ -187,7 +191,7 @@ function ExistingAccount( { onboarding, links, navigate } ) {
 				</h1>
 				<p className="rc-page__desc rc-page__desc--wide">
 					{ __(
-						'Log in to get the API keys for this store, then enter them here.',
+						'If you already connected this store in ReferralCandy, confirm it below. Otherwise, log in to get the API keys and enter them here.',
 						'woocommerce-referralcandy'
 					) }
 				</p>
@@ -195,7 +199,53 @@ function ExistingAccount( { onboarding, links, navigate } ) {
 				<div className="rc-panel">
 					<h5>
 						{ __(
-							'Get your API keys',
+							'Already connected in ReferralCandy?',
+							'woocommerce-referralcandy'
+						) }
+					</h5>
+					<p>
+						{ __(
+							'Confirm the connection by approving access once more. Nothing is created, and no API keys are needed.',
+							'woocommerce-referralcandy'
+						) }
+					</p>
+					{ ! canConnect && ! starting && (
+						<ul className="rc-status rc-status--compact">
+							<Check
+								ok={ onboarding.https }
+								label={ __(
+									'Store is served over HTTPS',
+									'woocommerce-referralcandy'
+								) }
+							/>
+							<Check
+								ok={ onboarding.canAuthorize }
+								label={ __(
+									'You can manage WooCommerce on this site',
+									'woocommerce-referralcandy'
+								) }
+							/>
+						</ul>
+					) }
+					<div className="rc-actions">
+						<Button
+							variant="primary"
+							isBusy={ starting }
+							disabled={ ! canConnect }
+							onClick={ onStart }
+						>
+							{ __(
+								'Confirm connection',
+								'woocommerce-referralcandy'
+							) }
+						</Button>
+					</div>
+				</div>
+
+				<div className="rc-panel">
+					<h5>
+						{ __(
+							'Connected with API keys instead?',
 							'woocommerce-referralcandy'
 						) }
 					</h5>

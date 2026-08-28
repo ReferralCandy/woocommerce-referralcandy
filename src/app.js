@@ -46,7 +46,79 @@ export default function App( { config } ) {
 	const [ skipSetup, setSkipSetup ] = useState( false );
 
 	const [ section = 'overview', sub ] = route;
-	const connected = data ? hasKeys( data.values ) : config.hasCredentials;
+	// A wc-auth connected store granted ReferralCandy its own WooCommerce credentials and
+	// never holds API keys, so it is connected without them.
+	const platformConnected = data
+		? Boolean( data.platformConnected )
+		: Boolean( config.platformConnected );
+	const connected =
+		platformConnected ||
+		( data ? hasKeys( data.values ) : config.hasCredentials );
+
+	/**
+	 * ReferralCandy appends the signup ticket to the URL it returns the merchant to. Exchange
+	 * it once, server-side, then drop it from the address bar so a reload cannot replay it.
+	 */
+	useEffect( () => {
+		const params = new URLSearchParams( window.location.search );
+		// rc_signup is the signup nonce, handed back by an approval that ended here directly.
+		// rc_token is the durable status token, used when the merchant went the long way round
+		// through onboarding and payment first, by which time the nonce is long expired.
+		const ticket = params.get( 'rc_signup' );
+		const statusToken = params.get( 'rc_token' );
+		if ( ! ticket && ! statusToken ) return;
+
+		params.delete( 'rc_signup' );
+		params.delete( 'rc_token' );
+		const query = params.toString();
+		window.history.replaceState(
+			{},
+			'',
+			window.location.pathname +
+				( query ? `?${ query }` : '' ) +
+				window.location.hash
+		);
+
+		apiFetch( {
+			path: `${ config.onboardingPath }/connection`,
+			method: 'POST',
+			data: ticket ? { ticket } : { statusToken },
+		} )
+			.then( ( result ) => {
+				if ( ! result.connected ) {
+					if ( result.reason === 'setup_incomplete' ) {
+						// The store is attached, but its owner stopped before choosing a
+						// plan. Point them back at the account they already have.
+						setNotice( {
+							status: 'warning',
+							message: __(
+								'Your store is linked, but your ReferralCandy account still needs a plan before referrals can run. Finish setting it up, then reload this page.',
+								'woocommerce-referralcandy'
+							),
+						} );
+					}
+					return;
+				}
+				// Re-read rather than patching local state: the status list and the settings
+				// groups are both derived server-side from the flag just written.
+				return apiFetch( { path: config.restPath } ).then(
+					( refreshed ) => {
+						setData( refreshed );
+						setDraft( refreshed.values );
+						setNotice( {
+							status: 'success',
+							message: __(
+								'Your store is connected to ReferralCandy.',
+								'woocommerce-referralcandy'
+							),
+						} );
+					}
+				);
+			} )
+			.catch( ( e ) =>
+				setNotice( { status: 'error', message: e.message } )
+			);
+	}, [ config.onboardingPath, config.restPath ] );
 
 	useEffect( () => {
 		apiFetch( { path: config.restPath } )
@@ -160,7 +232,9 @@ export default function App( { config } ) {
 		}
 	};
 
-	const groups = data ? groupsFor( data.fields ) : GROUPS;
+	const groups = data
+		? groupsFor( data.fields, platformConnected )
+		: GROUPS;
 
 	// "#/settings" lands on the first group.
 	useEffect( () => {
@@ -245,6 +319,7 @@ export default function App( { config } ) {
 		page = (
 			<Overview
 				status={ data.status }
+				platformConnected={ platformConnected }
 				links={ config.links }
 				navigate={ ( to ) => {
 					if ( to.startsWith( '/setup' ) ) {

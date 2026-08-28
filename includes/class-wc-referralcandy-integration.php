@@ -204,6 +204,15 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                     }
                 } else {
                     $value = sanitize_text_field($value);
+
+                    // sanitize_text_field keeps quotes and angle brackets stripped of tags,
+                    // which is not enough for values that end up inside a script URL or an
+                    // HTML attribute. These three are opaque identifiers issued by
+                    // ReferralCandy, so anything outside their alphabet is a mistake or an
+                    // attack, never a legitimate key.
+                    if (in_array($key, self::IDENTIFIER_FIELDS, true) && $value !== '' && !self::is_identifier($value)) {
+                        return $this->invalid_setting($label);
+                    }
                 }
 
                 $out[$key] = $value;
@@ -352,9 +361,34 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             $order->save();
         }
 
+        /**
+         * Settings that are ReferralCandy identifiers rather than free text. They reach a
+         * script URL (`app_id`) and popup attributes (`popup_campaign_key`), so their shape is
+         * enforced on the way in as well as escaped on the way out.
+         */
+        const IDENTIFIER_FIELDS = ['api_id', 'app_id', 'popup_campaign_key'];
+
+        /** Letters, digits, dash and underscore — the alphabet ReferralCandy's ids use. */
+        public static function is_identifier($value)
+        {
+            return (bool) preg_match('/^[A-Za-z0-9_-]{1,128}$/', (string) $value);
+        }
+
         public function has_credentials()
         {
             return !empty($this->get_option('api_id')) && !empty($this->get_option('secret_key'));
+        }
+
+        /**
+         * Whether this store is connected to ReferralCandy through wc-auth.
+         *
+         * Such a store granted ReferralCandy its own WooCommerce credentials, and ReferralCandy
+         * pulls orders with them, so the API Access ID / App ID / Secret Key never apply to it.
+         * Set once, on the signup return leg — see RC_Admin::confirm_connection().
+         */
+        public function has_platform_connection()
+        {
+            return (bool) get_option('wc_referralcandy_platform_connected', false);
         }
 
         /**
@@ -365,11 +399,19 @@ if (!class_exists('WC_Referralcandy_Integration')) {
         public function get_requirement_checks()
         {
             $checks = [];
-            $keys = [
-                'api_id'     => __('API Access ID', 'woocommerce-referralcandy'),
-                'app_id'     => __('App ID', 'woocommerce-referralcandy'),
-                'secret_key' => __('Secret Key', 'woocommerce-referralcandy'),
-            ];
+            // A platform-connected store signs nothing: ReferralCandy pulls its orders with the
+            // WooCommerce credentials it was granted, so the API Access ID and Secret Key do not
+            // apply and warning about them is noise. The App ID still does — the tracking script
+            // is named after it — and it is filled in automatically on connect, so a missing one
+            // is a real fault worth reporting rather than a step the merchant skipped.
+            $platform_connected = $this->has_platform_connection();
+            $keys = $platform_connected
+                ? ['app_id' => __('App ID', 'woocommerce-referralcandy')]
+                : [
+                    'api_id'     => __('API Access ID', 'woocommerce-referralcandy'),
+                    'app_id'     => __('App ID', 'woocommerce-referralcandy'),
+                    'secret_key' => __('Secret Key', 'woocommerce-referralcandy'),
+                ];
 
             foreach ($keys as $key => $label) {
                 $checks[] = [
@@ -381,7 +423,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 ];
             }
 
-            if ($this->has_credentials() && class_exists('RC_Api')) {
+            if (!$platform_connected && $this->has_credentials() && class_exists('RC_Api')) {
                 $verified = RC_Api::verify();
                 $checks[] = [
                     'id'      => 'api_verified',
@@ -468,8 +510,11 @@ if (!class_exists('WC_Referralcandy_Integration')) {
         {
             $shouldRenderTrackingCode = is_order_received_page() || is_page($this->tracking_page);
             if ($shouldRenderTrackingCode) {
+                // esc_js because this is a JS string literal, not HTML: a value carrying a
+                // quote would otherwise close it and run whatever follows. app_id reaches here
+                // from the settings form (any shop manager) and from ReferralCandy's API.
                 $tracking_code = '<script async type="text/javascript">
-                    !function(d,s) { var rc = "//go.referralcandy.com/purchase/' . $this->app_id . '.js";
+                    !function(d,s) { var rc = "//go.referralcandy.com/purchase/' . esc_js($this->app_id) . '.js";
                     var js = d.createElement(s); js.src = rc; var fjs = d.getElementsByTagName(s)[0];
                     fjs.parentNode.insertBefore(js,fjs); }(document,"script"); </script>';
                 echo $tracking_code;
@@ -503,25 +548,38 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             return $locale;
         }
 
+        /**
+         * Markup for the post-purchase popup.
+         *
+         * Every value here is escaped, and most of them are attacker-controlled: the name and
+         * email come from whoever placed the order, including a guest. Interpolated raw, a
+         * billing first name of `"><img src=x onerror=...>` is stored with the order and runs
+         * for anyone who opens the order-received page — support staff following a customer's
+         * link included, on the store's own domain.
+         */
         private function get_post_purchase_popup_html($rc_order, $campaign_key = null)
         {
-            $data_id_type = !empty($campaign_key) ? "data-id-type=campaign" : "data-id-type=client";
-            $data_id = !empty($campaign_key) ? $campaign_key : $rc_order->api_id;
+            $data_id_type = !empty($campaign_key) ? 'data-id-type="campaign"' : 'data-id-type="client"';
+            $attributes = [
+                'data-id'                    => !empty($campaign_key) ? $campaign_key : $rc_order->api_id,
+                'data-fname'                 => $rc_order->first_name,
+                'data-lname'                 => $rc_order->last_name,
+                'data-email'                 => $rc_order->email,
+                'data-locale'                => $this->get_current_locale(),
+                'data-accepts-marketing'     => $rc_order->accepts_marketing,
+                'data-amount'                => $rc_order->total,
+                'data-currency'              => $rc_order->currency,
+                'data-external-reference-id' => $rc_order->order_number,
+                'data-timestamp'             => $rc_order->order_timestamp,
+            ];
 
-            return "<div
-                    id='refcandy-lollipop'
-                    data-id='$data_id'
-                    data-fname='$rc_order->first_name'
-                    data-lname='$rc_order->last_name'
-                    data-email='$rc_order->email'
-                    data-locale='" . $this->get_current_locale() . "'
-                    data-accepts-marketing='$rc_order->accepts_marketing'
-                    data-amount='$rc_order->total'
-                    data-currency='$rc_order->currency'
-                    data-external-reference-id='$rc_order->order_number'
-                    data-timestamp='$rc_order->order_timestamp'
-                    $data_id_type
-                    ></div><style>iframe[src*='portal.referralcandy.com']{ height: 100% !important; }</style>";
+            $rendered = '';
+            foreach ($attributes as $name => $value) {
+                $rendered .= sprintf(' %s="%s"', $name, esc_attr((string) $value));
+            }
+
+            return '<div id="refcandy-lollipop"' . $rendered . ' ' . $data_id_type . '></div>'
+                . "<style>iframe[src*='portal.referralcandy.com']{ height: 100% !important; }</style>";
         }
 
         public function render_post_purchase_popup($order_id)

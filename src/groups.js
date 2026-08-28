@@ -83,13 +83,58 @@ export const GROUPS = [
 	},
 ];
 
-export function groupsFor( fields ) {
-	const known = new Set( GROUPS.flatMap( ( g ) => g.fields ) );
-	const other = Object.keys( fields ).filter( ( k ) => ! known.has( k ) );
+/**
+ * Hidden outright when the store is platform-connected, not moved into "Other".
+ *
+ * `app_id` is deliberately absent: it is not a credential but the public identifier the
+ * tracking script is named after, so it stays on screen even though the merchant never has to
+ * type it — the connection fills it in.
+ */
+const CONNECTION_FIELDS = new Set( [ 'api_id', 'secret_key' ] );
+
+/**
+ * @param {Object}  fields            Field schema from PHP.
+ * @param {boolean} platformConnected Store connected through wc-auth, which grants
+ *                                    ReferralCandy the store's own WooCommerce credentials.
+ *                                    Such a store has no API keys to show, so the whole
+ *                                    connection group goes away rather than sitting there
+ *                                    empty and looking unfinished.
+ */
+export function groupsFor( fields, platformConnected = false ) {
+	const groups = platformConnected
+		? GROUPS.map( ( group ) =>
+				group.key === 'connection'
+					? {
+							...group,
+							title: __(
+								'Connection',
+								'woocommerce-referralcandy'
+							),
+							description: __(
+								'This store is connected through WooCommerce. ReferralCandy reads your orders directly, so no API keys are needed.',
+								'woocommerce-referralcandy'
+							),
+							fields: group.fields.filter(
+								( key ) => ! CONNECTION_FIELDS.has( key )
+							),
+							tips: [
+								__(
+									'The App ID identifies your account to the tracking script on your thank-you page. It is filled in for you when the store connects.',
+									'woocommerce-referralcandy'
+								),
+							],
+					  }
+					: group
+		  )
+		: GROUPS;
+	const known = new Set( groups.flatMap( ( g ) => g.fields ) );
+	const other = Object.keys( fields ).filter(
+		( k ) => ! known.has( k ) && ! ( platformConnected && CONNECTION_FIELDS.has( k ) )
+	);
 
 	return other.length
 		? [
-				...GROUPS,
+				...groups,
 				{
 					key: 'other',
 					title: __( 'Other', 'woocommerce-referralcandy' ),
@@ -98,5 +143,5 @@ export function groupsFor( fields ) {
 					tips: [],
 				},
 		  ]
-		: GROUPS;
+		: groups;
 }

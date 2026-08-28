@@ -57,7 +57,13 @@ function stagingBaseReplacements() {
 	for ( const match of defines ) {
 		const envName = `WC_REFERRALCANDY_STAGING_${ match[ 1 ] }`;
 		const value = process.env[ envName ];
-		if ( ! /^https:\/\/[^'\s]+$/.test( value || '' ) ) {
+		// http is only tolerated for a local rc-main - loopback, or the gateway the
+		// container reaches the host through. Anything remote must still be https.
+		const isLocal =
+			/^http:\/\/(localhost|127\.0\.0\.1|host\.docker\.internal)(:\d+)?(\/[^'\s]*)?$/.test(
+				value || ''
+			);
+		if ( ! /^https:\/\/[^'\s]+$/.test( value || '' ) && ! isLocal ) {
 			missing.push( envName );
 			continue;
 		}
@@ -111,6 +117,7 @@ const FLAVORS = {
 			[ /\bWC_Referralcandy\b/g, 'WC_Referralcandy_Staging' ],
 			[ /\bRC_Order\b/g, 'RC_Order_Staging' ],
 			[ /\bRC_Admin\b/g, 'RC_Admin_Staging' ],
+			[ /\bRC_Api\b/g, 'RC_Api_Staging' ],
 			[ /\bwc_referralcandy_/g, 'wc_referralcandy_staging_' ],
 			[ /\bWC_REFERRALCANDY_/g, 'WC_REFERRALCANDY_STAGING_' ],
 			[ /\brc_plugin_links\b/g, 'rc_staging_plugin_links' ],
@@ -190,6 +197,27 @@ if ( flavorName !== 'production' ) {
 		if ( typeof from === 'string' && main.includes( from ) ) {
 			console.error( `Replacement did not apply: ${ from }` );
 			process.exit( 1 );
+		}
+	}
+	// A missed rename is silent: the class_exists guards make the staging plugin reuse the
+	// production class, so it talks to production hosts. Catch it here instead.
+	for ( const entry of zip.getEntries() ) {
+		if ( ! entry.entryName.endsWith( '.php' ) ) {
+			continue;
+		}
+
+		const declarations = entry
+			.getData()
+			.toString( 'utf8' )
+			.matchAll( /^\s*(?:class|function)\s+(RC_\w+|WC_Referralcandy\w*|wc_referralcandy_\w+)/gim );
+
+		for ( const [ , symbol ] of declarations ) {
+			if ( ! /_staging/i.test( symbol ) ) {
+				console.error(
+					`Unsuffixed global symbol in ${ entry.entryName }: ${ symbol }`
+				);
+				process.exit( 1 );
+			}
 		}
 	}
 }

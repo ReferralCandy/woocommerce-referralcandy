@@ -43,6 +43,11 @@ function NavItem( {
 }
 
 function SetupNav( { sub, signupStarted, navigate } ) {
+	// The last step depends on which way the merchant went. Connecting through WooCommerce
+	// ends at ReferralCandy's plan picker and never asks for a key, so promising "Enter API
+	// keys" to everyone advertises a chore most merchants will never do — and it is the step
+	// left on screen while they decide whether to start at all.
+	const enteringKeys = sub === 'keys';
 	const steps = [
 		{
 			key: 'create',
@@ -53,17 +58,30 @@ function SetupNav( { sub, signupStarted, navigate } ) {
 		},
 		{
 			key: 'approve',
-			label: __( 'Approve & pay', 'woocommerce-referralcandy' ),
+			label: __( 'Approve access', 'woocommerce-referralcandy' ),
 			active: false,
 			done: signupStarted,
 		},
-		{
-			key: 'keys',
-			label: __( 'Enter API keys', 'woocommerce-referralcandy' ),
-			active: sub === 'keys',
-			done: false,
-			to: '/setup/keys',
-		},
+		enteringKeys
+			? {
+					key: 'keys',
+					label: __(
+						'Enter API keys',
+						'woocommerce-referralcandy'
+					),
+					active: true,
+					done: false,
+					to: '/setup/keys',
+			  }
+			: {
+					key: 'plan',
+					label: __(
+						'Choose a plan',
+						'woocommerce-referralcandy'
+					),
+					active: false,
+					done: false,
+			  },
 	];
 
 	return (

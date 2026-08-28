@@ -99,6 +99,15 @@ class RC_Order {
             return;
         }
 
+        // A store connected through wc-auth has ReferralCandy pulling its orders already.
+        // Pushing them as well would record the same purchase twice and reward the referral
+        // twice with it. Keys can still be present on such a store - they are hidden, not
+        // deleted, and a merchant may have pasted them before connecting.
+        $integration = WC_Referralcandy::$integration;
+        if ($integration && $integration->has_platform_connection()) {
+            return;
+        }
+
         // RC_Api adds accessID + timestamp and signs the sorted parameters.
         $result = RC_Api::signed_request('purchase.json', $this->generate_post_fields());
 

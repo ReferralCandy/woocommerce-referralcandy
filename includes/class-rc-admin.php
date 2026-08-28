@@ -25,6 +25,13 @@ if (!class_exists('RC_Admin')) {
         const BODY_CLASS = 'wc-referralcandy-fullscreen';
         const CAPABILITY = 'manage_woocommerce';
         const SIGNUP_STARTED_OPTION = 'wc_referralcandy_signup_started';
+        /** Stands in for a stored secret key on the way out; means "unchanged" on the way in. */
+        const SECRET_MASK = '********';
+        const PLATFORM_CONNECTED_OPTION = 'wc_referralcandy_platform_connected';
+        const PLATFORM_TOKEN_OPTION = 'wc_referralcandy_platform_token';
+        const PLATFORM_CHECKED_TRANSIENT = 'wc_referralcandy_platform_checked';
+        /** How long a "still connected?" answer is trusted before it is asked again. */
+        const PLATFORM_RECHECK_SECONDS = HOUR_IN_SECONDS;
 
         /** @var string Hook suffix (= screen id) returned by add_menu_page(). */
         private $hook_suffix = '';
@@ -146,6 +153,9 @@ if (!class_exists('RC_Admin')) {
                 'onboardingPath' => '/' . $this->rest_namespace() . '/onboarding',
                 'adminUrl'       => admin_url(),
                 'hasCredentials' => $this->integration()->has_credentials(),
+                // Known before the first REST round trip, so the setup gate never flashes for
+                // a store that is already connected.
+                'platformConnected' => $this->integration()->has_platform_connection(),
                 'links'          => [
                     'signup'       => $this->app_url('/signup/woocommerce'),
                     'login'        => $this->app_url('/login'),
@@ -248,6 +258,11 @@ if (!class_exists('RC_Admin')) {
                 'callback'            => [$this, 'verify_credentials'],
                 'permission_callback' => $permission,
             ]);
+            register_rest_route($ns, '/onboarding/connection', [
+                'methods'             => WP_REST_Server::CREATABLE,
+                'callback'            => [$this, 'confirm_connection'],
+                'permission_callback' => $permission,
+            ]);
         }
 
         /** @return WC_Referralcandy_Integration */
@@ -275,15 +290,25 @@ if (!class_exists('RC_Admin')) {
                 $fields[$key] = $field;
             }
 
+            // The secret key signs API requests, so it goes out masked. `manage_woocommerce`
+            // covers shop managers, who can open this screen but have no business reading a
+            // credential back out of it. The mask is echoed back on save and treated as "keep
+            // what is stored", so the merchant can still edit every other field.
+            if (isset($values['secret_key']) && $values['secret_key'] !== '') {
+                $values['secret_key'] = self::SECRET_MASK;
+            }
+
             return rest_ensure_response([
-                'values' => $values,
-                'fields' => $fields,
-                'status' => $integration->get_requirement_checks(),
+                'values'            => $values,
+                'fields'            => $fields,
+                'status'            => $integration->get_requirement_checks(),
+                'platformConnected' => $integration->has_platform_connection(),
             ]);
         }
 
         public function get_settings()
         {
+            $this->refresh_platform_connection();
             $defaults = wp_list_pluck($this->integration()->form_fields, 'default');
 
             return $this->response(wp_parse_args($this->current_values(), $defaults));
@@ -303,7 +328,15 @@ if (!class_exists('RC_Admin')) {
             }
 
             $integration = $this->integration();
-            $clean = $integration->validate_settings($body, $this->current_values());
+            $current = $this->current_values();
+
+            // The mask is what a read handed out; taking it literally would overwrite the real
+            // key with asterisks the first time a merchant saved any other setting.
+            if (isset($body['secret_key']) && $body['secret_key'] === self::SECRET_MASK) {
+                unset($body['secret_key']);
+            }
+
+            $clean = $integration->validate_settings($body, $current);
 
             if (is_wp_error($clean)) {
                 return $clean;
@@ -321,6 +354,120 @@ if (!class_exists('RC_Admin')) {
             return $this->response($clean);
         }
 
+        /**
+         * Persists a confirmed connection, with the token that lets it be re-checked later.
+         */
+        private function remember_connection($status_token, $app_id = null)
+        {
+            update_option(self::PLATFORM_CONNECTED_OPTION, 1, false);
+
+            if ($status_token) {
+                update_option(self::PLATFORM_TOKEN_OPTION, $status_token, false);
+            }
+
+            $this->store_app_id($app_id);
+
+            set_transient(self::PLATFORM_CHECKED_TRANSIENT, 1, self::PLATFORM_RECHECK_SECONDS);
+        }
+
+        /**
+         * Saves the App ID ReferralCandy reported for this store.
+         *
+         * It is the one credential field a wc-auth store still needs: the tracking script is
+         * named after it (`go.referralcandy.com/purchase/<app_id>.js`), and without it the
+         * thank-you page loads nothing. It is public — an encrypted client id in a script URL,
+         * not a secret — so filling it in is a convenience, not a disclosure. The merchant is
+         * spared hunting for it in a dashboard they may never have opened.
+         *
+         * Written straight to the settings array rather than through validate_settings(),
+         * which would demand every other field alongside it.
+         */
+        private function store_app_id($app_id)
+        {
+            $app_id = is_string($app_id) ? trim($app_id) : '';
+            if ($app_id === '') {
+                return;
+            }
+
+            // Shape-checked even though it came from ReferralCandy over TLS. This value is
+            // written without a merchant ever seeing it and ends up inside a <script> URL and a
+            // popup attribute; a spoofed or compromised response must not be able to put
+            // anything else there. Escaping at output is the other half of this.
+            if (!WC_Referralcandy_Integration::is_identifier($app_id)) {
+                return;
+            }
+
+            $integration = $this->integration();
+            $values = $this->current_values();
+
+            if (isset($values['app_id']) && $values['app_id'] === $app_id) {
+                return;
+            }
+
+            $values['app_id'] = $app_id;
+            update_option($integration->get_option_key(), $values);
+            $integration->init_settings();
+            $integration->app_id = $app_id;
+        }
+
+        /**
+         * Re-asks ReferralCandy whether this store is still connected, at most hourly.
+         *
+         * Without this the flag is written once and believed forever, so a merchant who
+         * disconnects in the ReferralCandy dashboard, moves their store to a new domain,
+         * deletes their account, or revokes the WooCommerce API key keeps seeing "connected"
+         * on a store where nothing syncs any more — and, because a connected store does not
+         * push orders either, referrals stop being recorded at all, silently.
+         *
+         * Deliberately admin-only and cached: it runs when the merchant opens the plugin, not
+         * on storefront requests. An unreachable ReferralCandy leaves the stored answer alone
+         * — an outage must never throw a working merchant back into the setup wizard — and is
+         * retried sooner than a real answer would be.
+         */
+        private function refresh_platform_connection()
+        {
+            // The token, not the flag, decides whether to keep asking. A store that lost the
+            // flag because its owner still owes a plan must be able to gain it back the moment
+            // they pay, without approving access all over again.
+            $token = (string) get_option(self::PLATFORM_TOKEN_OPTION, '');
+
+            if ($token === '') {
+                return;
+            }
+
+            if (get_transient(self::PLATFORM_CHECKED_TRANSIENT)) {
+                return;
+            }
+
+            $status = RC_Api::connection_status(['statusToken' => $token], $this->store_url());
+
+            if ($status === null) {
+                // Unknown, not disconnected. Retry sooner than a real answer.
+                set_transient(self::PLATFORM_CHECKED_TRANSIENT, 1, 5 * MINUTE_IN_SECONDS);
+                return;
+            }
+
+            if (!$status['connected']) {
+                // Not connected any more, so the key setup, the settings group and every
+                // requirement check come back.
+                delete_option(self::PLATFORM_CONNECTED_OPTION);
+
+                if ($status['reason'] === 'setup_incomplete') {
+                    // The store is still linked; its owner simply has not finished choosing a
+                    // plan. Keep the token so finishing it is noticed here without making them
+                    // approve access all over again, and look again sooner than usual.
+                    set_transient(self::PLATFORM_CHECKED_TRANSIENT, 1, 5 * MINUTE_IN_SECONDS);
+                    return;
+                }
+
+                delete_option(self::PLATFORM_TOKEN_OPTION);
+                delete_transient(self::PLATFORM_CHECKED_TRANSIENT);
+                return;
+            }
+
+            $this->remember_connection($status['statusToken'], $status['appId']);
+        }
+
         // ---- Onboarding -------------------------------------------------------------------
 
         private function store_url()
@@ -330,6 +477,7 @@ if (!class_exists('RC_Admin')) {
 
         public function get_onboarding()
         {
+            $this->refresh_platform_connection();
             $store_url = $this->store_url();
             $started = (int) get_option(self::SIGNUP_STARTED_OPTION, 0);
 
@@ -340,6 +488,7 @@ if (!class_exists('RC_Admin')) {
                 'storeExists'     => RC_Api::store_exists($store_url),
                 'signupStartedAt' => $started ?: null,
                 'hasCredentials'  => $this->integration()->has_credentials(),
+                'platformConnected' => $this->integration()->has_platform_connection(),
             ]);
         }
 
@@ -393,6 +542,49 @@ if (!class_exists('RC_Admin')) {
             update_option(self::SIGNUP_STARTED_OPTION, time(), false);
 
             return rest_ensure_response(['redirectUrl' => $redirect]);
+        }
+
+        /**
+         * Records that this store is connected to ReferralCandy through wc-auth.
+         *
+         * Called once by the app when the merchant lands back from signup carrying the ticket
+         * ReferralCandy echoed on the return leg. The ticket is checked with ReferralCandy
+         * rather than believed: it arrives in a URL the merchant's browser was handed, so
+         * anyone could visit this screen with one appended.
+         *
+         * Writes the flag only on a confirmed yes. A no leaves the store exactly where it was,
+         * in front of the API-key setup, which still works.
+         */
+        public function confirm_connection(WP_REST_Request $request)
+        {
+            $ticket = trim((string) $request->get_param('ticket'));
+            // Two ways back from ReferralCandy. A merchant who only approved access returns
+            // with the signup nonce; one who went on through onboarding and payment returns
+            // much later, long after that nonce expired, carrying the status token instead.
+            $token = trim((string) $request->get_param('statusToken'));
+
+            if ($ticket === '' && $token === '') {
+                return new WP_Error(
+                    'rc_missing_ticket',
+                    __('A signup ticket is required.', 'woocommerce-referralcandy'),
+                    ['status' => 400]
+                );
+            }
+
+            $proof = $ticket !== '' ? ['ticket' => $ticket] : ['statusToken' => $token];
+            $status = RC_Api::connection_status($proof, $this->store_url());
+            $connected = is_array($status) && $status['connected'];
+
+            if ($connected) {
+                $this->remember_connection($status['statusToken'], $status['appId']);
+            }
+
+            return rest_ensure_response([
+                'connected' => $connected,
+                // Lets the app say "finish your ReferralCandy setup" instead of offering to
+                // start a signup the merchant has already half done.
+                'reason'    => is_array($status) ? $status['reason'] : null,
+            ]);
         }
 
         public function verify_credentials()

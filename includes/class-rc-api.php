@@ -142,6 +142,48 @@ if (!class_exists('RC_Api')) {
         }
 
         /**
+         * Asks ReferralCandy whether this store is connected through wc-auth.
+         *
+         * Two proofs, one question. The `ticket` is the nonce ReferralCandy echoes back on the
+         * signup return leg — unguessable, pinned to one store, and proof the caller was part
+         * of that handshake. The `statusToken` comes back with the first answer and is what
+         * every later re-check uses, because the ticket dies with the handoff minutes later.
+         * Neither is a credential: they authorise this one question and nothing else.
+         *
+         * @param array  $proof     ['ticket' => string] or ['statusToken' => string].
+         * @param string $store_url This store's own URL.
+         *
+         * @return array|null ['connected' => bool, 'statusToken' => string|null,
+         *                    'appId' => string|null], or null when the answer could not be
+         *                    obtained — which callers must treat as "unchanged", never as
+         *                    "not connected".
+         */
+        public static function connection_status(array $proof, $store_url)
+        {
+            $result = self::main_api(
+                'POST',
+                '/commerce-platform/woocommerce/wc-auth/signup/connection',
+                array_merge($proof, ['storeUrl' => $store_url])
+            );
+
+            if (is_wp_error($result) || $result['code'] !== 200 || !isset($result['body']['connected'])) {
+                return null;
+            }
+
+            return [
+                'connected'   => (bool) $result['body']['connected'],
+                'statusToken' => isset($result['body']['statusToken'])
+                    ? (string) $result['body']['statusToken']
+                    : null,
+                // The public App ID (an encrypted client id) that names the tracking script.
+                'appId'       => isset($result['body']['appId']) ? (string) $result['body']['appId'] : null,
+                // 'setup_incomplete' when the store is attached but its owner never finished
+                // signing up. A plain no would send them to create a second account.
+                'reason'      => isset($result['body']['reason']) ? (string) $result['body']['reason'] : null,
+            ];
+        }
+
+        /**
          * Checks the saved API keys against ReferralCandy (verify.json).
          *
          * @return array ['ok' => bool, 'message' => string]

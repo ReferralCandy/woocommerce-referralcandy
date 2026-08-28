@@ -2,11 +2,52 @@ import { Button, Icon } from '@wordpress/components';
 import { check, closeSmall } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
 
-export default function Overview( { status, links, navigate } ) {
+/**
+ * A platform-connected store does not push orders — ReferralCandy pulls them with the
+ * WooCommerce credentials it was granted — so the connected copy must not promise sending.
+ */
+function readyText( ready, platformConnected ) {
+	if ( ! ready ) {
+		return platformConnected
+			? __(
+					'Your store is connected; a few settings below still need attention.',
+					'woocommerce-referralcandy'
+			  )
+			: __(
+					'Your keys are verified; a few settings below still need attention.',
+					'woocommerce-referralcandy'
+			  );
+	}
+
+	return platformConnected
+		? __(
+				'ReferralCandy reads your orders directly from WooCommerce, so referrals get rewarded automatically.',
+				'woocommerce-referralcandy'
+		  )
+		: __(
+				'Orders that reach the configured status are sent to ReferralCandy so referrals get rewarded automatically.',
+				'woocommerce-referralcandy'
+		  );
+}
+
+export default function Overview( {
+	status,
+	platformConnected,
+	links,
+	navigate,
+} ) {
 	const byId = Object.fromEntries( status.map( ( s ) => [ s.id, s ] ) );
-	const hasKeys = byId.api_id?.ok && byId.secret_key?.ok;
+	// Platform-connected stores have no key checks in the list at all, so "keys present"
+	// is satisfied by the connection itself.
+	const hasKeys =
+		platformConnected || ( byId.api_id?.ok && byId.secret_key?.ok );
 	const verified = byId.api_verified?.ok;
 	const ready = status.every( ( s ) => s.ok );
+	// Where the hero sends a connected merchant: the connection group is hidden for a
+	// platform-connected store, so its first settings page is order tracking.
+	const settingsTo = platformConnected
+		? '/settings/orders'
+		: '/settings/connection';
 
 	let hero;
 	if ( ! hasKeys ) {
@@ -33,24 +74,16 @@ export default function Overview( { status, links, navigate } ) {
 				'woocommerce-referralcandy'
 			),
 			cta: __( 'Fix API keys', 'woocommerce-referralcandy' ),
-			to: '/settings/connection',
+			to: settingsTo,
 		};
 	} else {
 		hero = {
 			title: ready
 				? __( 'Your store is connected.', 'woocommerce-referralcandy' )
 				: __( 'Almost there.', 'woocommerce-referralcandy' ),
-			text: ready
-				? __(
-						'Orders that reach the configured status are sent to ReferralCandy so referrals get rewarded automatically.',
-						'woocommerce-referralcandy'
-				  )
-				: __(
-						'Your keys are verified; a few settings below still need attention.',
-						'woocommerce-referralcandy'
-				  ),
+			text: readyText( ready, platformConnected ),
 			cta: __( 'Open settings', 'woocommerce-referralcandy' ),
-			to: '/settings/connection',
+			to: settingsTo,
 		};
 	}
 
@@ -121,37 +154,70 @@ export default function Overview( { status, links, navigate } ) {
 
 			<aside className="rc-tips">
 				<h4>{ __( 'Get started', 'woocommerce-referralcandy' ) }</h4>
+				{ /* The key-based checklist is meaningless once the store is connected
+				     through WooCommerce: the account exists and there is nothing to paste. */ }
 				<ol className="rc-steps">
-					<li>
-						<a
-							href={ links.signup }
-							target="_blank"
-							rel="noreferrer"
-						>
-							{ __(
-								'Start your free trial',
-								'woocommerce-referralcandy'
-							) }
-						</a>
-					</li>
-					<li>
-						<a
-							href={ links.integrations }
-							target="_blank"
-							rel="noreferrer"
-						>
-							{ __(
-								'Open Integrations → WooCommerce',
-								'woocommerce-referralcandy'
-							) }
-						</a>
-					</li>
-					<li>
-						{ __(
-							'Paste the API Access ID, App ID and Secret Key under Settings → API Connection.',
-							'woocommerce-referralcandy'
-						) }
-					</li>
+					{ platformConnected ? (
+						<>
+							<li>
+								<a
+									href={ links.dashboard }
+									target="_blank"
+									rel="noreferrer"
+								>
+									{ __(
+										'Open your ReferralCandy dashboard',
+										'woocommerce-referralcandy'
+									) }
+								</a>
+							</li>
+							<li>
+								{ __(
+									'Set up and launch your referral campaign.',
+									'woocommerce-referralcandy'
+								) }
+							</li>
+							<li>
+								{ __(
+									'Check the order status and checkout options under Settings.',
+									'woocommerce-referralcandy'
+								) }
+							</li>
+						</>
+					) : (
+						<>
+							<li>
+								<a
+									href={ links.signup }
+									target="_blank"
+									rel="noreferrer"
+								>
+									{ __(
+										'Start your free trial',
+										'woocommerce-referralcandy'
+									) }
+								</a>
+							</li>
+							<li>
+								<a
+									href={ links.integrations }
+									target="_blank"
+									rel="noreferrer"
+								>
+									{ __(
+										'Open Integrations → WooCommerce',
+										'woocommerce-referralcandy'
+									) }
+								</a>
+							</li>
+							<li>
+								{ __(
+									'Paste the API Access ID, App ID and Secret Key under Settings → API Connection.',
+									'woocommerce-referralcandy'
+								) }
+							</li>
+						</>
+					) }
 				</ol>
 				<hr />
 				<h4>{ __( 'Resources', 'woocommerce-referralcandy' ) }</h4>
