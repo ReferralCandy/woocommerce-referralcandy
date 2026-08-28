@@ -74,7 +74,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             }
 
             $popup_tooltip_content = '
-                <h4>' . __('What is campaign key?', 'woocommerce-referralcandy') . '</h4>
+                <h4>' . __('Which campaign?', 'woocommerce-referralcandy') . '</h4>
                 <p>' . __('This enables the correct campaign to display in the popup, replacing any other campaign currently shown.', 'woocommerce-referralcandy') . '</p>
                 <h4>' . __('Where to find this?', 'woocommerce-referralcandy') . '</h4>
                 <ol>
@@ -375,6 +375,14 @@ if (!class_exists('WC_Referralcandy_Integration')) {
          */
         const IDENTIFIER_FIELDS = ['api_id', 'app_id', 'popup_campaign_key'];
 
+        /**
+         * Campaign states, as ReferralCandy reports them.
+         *
+         * Paused and stopped both send nothing, but they are not the same thing to a merchant:
+         * one they did deliberately and mean to undo, the other is where every campaign starts.
+         */
+        const CAMPAIGN_STATUSES = ['active', 'paused', 'stopped'];
+
         /** Letters, digits, dash and underscore — the alphabet ReferralCandy's ids use. */
         public static function is_identifier($value)
         {
@@ -407,13 +415,24 @@ if (!class_exists('WC_Referralcandy_Integration')) {
 
             $options = ['' => __('Select a campaign', 'woocommerce-referralcandy')];
             foreach ($campaigns as $campaign) {
-                $options[$campaign['key']] = $campaign['active']
-                    ? $campaign['name']
-                    /* translators: %s: campaign name */
-                    : sprintf(__('%s (not running)', 'woocommerce-referralcandy'), $campaign['name']);
+                $options[$campaign['key']] = self::campaign_option_label($campaign);
             }
 
             return ['type' => 'select', 'options' => $options];
+        }
+
+        /** A campaign's name, saying so when picking it would leave the popup silent. */
+        private static function campaign_option_label($campaign)
+        {
+            if ($campaign['status'] === 'active') {
+                return $campaign['name'];
+            }
+
+            return $campaign['status'] === 'paused'
+                /* translators: %s: campaign name */
+                ? sprintf(__('%s (paused)', 'woocommerce-referralcandy'), $campaign['name'])
+                /* translators: %s: campaign name */
+                : sprintf(__('%s (not running)', 'woocommerce-referralcandy'), $campaign['name']);
         }
 
         /**
@@ -427,7 +446,19 @@ if (!class_exists('WC_Referralcandy_Integration')) {
         {
             $stored = get_option('wc_referralcandy_platform_campaigns', null);
 
-            return is_array($stored) && $stored !== [] ? $stored : null;
+            if (!is_array($stored) || $stored === []) {
+                return null;
+            }
+
+            // Snapshots written before campaigns had three states carry a boolean instead.
+            // Read them rather than discarding a merchant's list on upgrade.
+            return array_map(function ($campaign) {
+                if (!isset($campaign['status'])) {
+                    $campaign['status'] = !empty($campaign['active']) ? 'active' : 'stopped';
+                }
+
+                return $campaign;
+            }, $stored);
         }
 
         /**
@@ -505,14 +536,14 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             $campaigns = $this->platform_campaigns();
             if ($platform_connected && $campaigns !== null) {
                 $active = array_filter($campaigns, function ($campaign) {
-                    return !empty($campaign['active']);
+                    return $campaign['status'] === 'active';
                 });
 
                 $checks[] = [
                     'id'      => 'campaign_active',
                     'label'   => __('Active campaign', 'woocommerce-referralcandy'),
                     'ok'      => $active !== [],
-                    'message' => __('No campaign is running, so no referral emails will go out. Start one in your ReferralCandy dashboard.', 'woocommerce-referralcandy'),
+                    'message' => __('No campaign is running, so no referral emails will go out. Start or resume one in your ReferralCandy dashboard.', 'woocommerce-referralcandy'),
                 ];
             }
 

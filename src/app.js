@@ -125,6 +125,9 @@ export default function App( { config } ) {
 			.then( ( response ) => {
 				setData( response );
 				setDraft( response.values );
+				// Paint first, then check. The app mounts once per page load, so this is one
+				// call per visit, not one per navigation: the hash router never remounts it.
+				refreshConnection();
 			} )
 			.catch( ( e ) =>
 				setNotice( { status: 'error', message: e.message } )
@@ -216,6 +219,24 @@ export default function App( { config } ) {
 			setSaving( false );
 		}
 	};
+
+	/**
+	 * Re-asks ReferralCandy after the screen has painted, so a change made in the dashboard is
+	 * already reflected by the time the merchant looks. Forced, because opening this screen is
+	 * itself the asking; silent on failure, because nobody pressed anything and what is already
+	 * on screen remains the best answer available.
+	 */
+	const refreshConnection = () =>
+		apiFetch( {
+			path: `${ config.onboardingPath }/refresh`,
+			method: 'POST',
+			data: { force: true },
+		} )
+			.then( ( response ) => {
+				setData( response );
+				setDraft( response.values );
+			} )
+			.catch( () => {} );
 
 	const startSignup = async () => {
 		setStarting( true );
@@ -320,6 +341,7 @@ export default function App( { config } ) {
 			<Overview
 				status={ data.status }
 				platformConnected={ platformConnected }
+				campaigns={ data.campaigns || [] }
 				links={ config.links }
 				navigate={ ( to ) => {
 					if ( to.startsWith( '/setup' ) ) {

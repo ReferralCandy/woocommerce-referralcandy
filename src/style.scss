@@ -398,6 +398,12 @@ $muted: #757575;
 		&--bad {
 			background: #cc1818;
 		}
+
+		// Paused is not a failure: amber, so a campaign the merchant stopped on purpose does
+		// not read as something broken.
+		&--warn {
+			background: #b26200;
+		}
 	}
 
 	&__label {

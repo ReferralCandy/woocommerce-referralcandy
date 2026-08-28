@@ -1,6 +1,38 @@
 import { Button, Icon } from '@wordpress/components';
-import { check, closeSmall } from '@wordpress/icons';
+import { check, closeSmall, pause } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
+
+/**
+ * How a campaign reads on screen.
+ *
+ * Paused is its own row rather than folded into "not running": both send nothing, but a paused
+ * campaign is one the merchant stopped on purpose and can resume, while a stopped one is where
+ * every campaign begins. Telling them apart is the difference between "you turned this off" and
+ * "you never turned this on".
+ */
+function campaignState( status ) {
+	if ( status === 'active' ) {
+		return {
+			tone: 'ok',
+			icon: check,
+			label: __( 'Running', 'woocommerce-referralcandy' ),
+		};
+	}
+
+	if ( status === 'paused' ) {
+		return {
+			tone: 'warn',
+			icon: pause,
+			label: __( 'Paused', 'woocommerce-referralcandy' ),
+		};
+	}
+
+	return {
+		tone: 'bad',
+		icon: closeSmall,
+		label: __( 'Not running', 'woocommerce-referralcandy' ),
+	};
+}
 
 /**
  * A platform-connected store does not push orders — ReferralCandy pulls them with the
@@ -33,6 +65,7 @@ function readyText( ready, platformConnected ) {
 export default function Overview( {
 	status,
 	platformConnected,
+	campaigns = [],
 	links,
 	navigate,
 } ) {
@@ -150,6 +183,53 @@ export default function Overview( {
 						</li>
 					) ) }
 				</ul>
+				{ campaigns.length > 0 && (
+					<>
+						<h2 className="rc-page__subtitle">
+							{ __(
+								'Campaigns',
+								'woocommerce-referralcandy'
+							) }
+						</h2>
+						<p className="rc-page__desc">
+							{ __(
+								'Only a running campaign sends referral emails. Start, pause and edit them in your ReferralCandy dashboard.',
+								'woocommerce-referralcandy'
+							) }
+						</p>
+						{ /* Read-only on purpose: activating a campaign involves rewards,
+						     emails and themes, and a button here would be a thin wrapper
+						     over a deep flow that already has a home. */ }
+						<ul className="rc-status">
+							{ campaigns.map( ( campaign ) => {
+								const state = campaignState( campaign.status );
+
+								return (
+									<li key={ campaign.key }>
+										<span
+											className={ `rc-status__icon rc-status__icon--${ state.tone }` }
+										>
+											<Icon
+												icon={ state.icon }
+												size={ 18 }
+											/>
+										</span>
+										<span className="rc-status__label">
+											{ campaign.name ||
+												__(
+													'Untitled campaign',
+													'woocommerce-referralcandy'
+												) }
+										</span>
+										<span className="rc-status__message">
+											{ state.label }
+										</span>
+									</li>
+								);
+							} ) }
+						</ul>
+					</>
+				) }
 			</div>
 
 			<aside className="rc-tips">

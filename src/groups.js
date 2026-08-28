@@ -72,7 +72,7 @@ export const GROUPS = [
 		fields: [ 'popup', 'popup_campaign_key', 'popup_quickfix' ],
 		tips: [
 			__(
-				'The campaign key selects which campaign the popup shows. Find it under Campaigns > (campaign) > Widgets > Post-purchase Popup > WooCommerce integration.',
+				'The campaign decides which offer the popup shows. A connected store lists its own campaigns here; otherwise paste the key from Campaigns > (campaign) > Widgets > Post-purchase Popup > WooCommerce integration.',
 				'woocommerce-referralcandy'
 			),
 			__(

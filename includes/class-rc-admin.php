@@ -31,8 +31,15 @@ if (!class_exists('RC_Admin')) {
         const PLATFORM_TOKEN_OPTION = 'wc_referralcandy_platform_token';
         const PLATFORM_CAMPAIGNS_OPTION = 'wc_referralcandy_platform_campaigns';
         const PLATFORM_CHECKED_TRANSIENT = 'wc_referralcandy_platform_checked';
-        /** How long a "still connected?" answer is trusted before it is asked again. */
-        const PLATFORM_RECHECK_SECONDS = HOUR_IN_SECONDS;
+        /**
+         * How long a "still connected?" answer is trusted before it is asked again.
+         *
+         * Short, because nothing waits on it: the screen paints from what is stored and the
+         * app re-asks afterwards. An hour was protecting the wrong thing — the check only ever
+         * ran on this plugin's own REST reads, so the cost was never "every admin page", it was
+         * this screen's first paint, and that is now off the critical path entirely.
+         */
+        const PLATFORM_RECHECK_SECONDS = 5 * MINUTE_IN_SECONDS;
 
         /** @var string Hook suffix (= screen id) returned by add_menu_page(). */
         private $hook_suffix = '';
@@ -264,6 +271,11 @@ if (!class_exists('RC_Admin')) {
                 'callback'            => [$this, 'confirm_connection'],
                 'permission_callback' => $permission,
             ]);
+            register_rest_route($ns, '/onboarding/refresh', [
+                'methods'             => WP_REST_Server::CREATABLE,
+                'callback'            => [$this, 'refresh_connection'],
+                'permission_callback' => $permission,
+            ]);
         }
 
         /** @return WC_Referralcandy_Integration */
@@ -304,12 +316,14 @@ if (!class_exists('RC_Admin')) {
                 'fields'            => $fields,
                 'status'            => $integration->get_requirement_checks(),
                 'platformConnected' => $integration->has_platform_connection(),
+                // Read-only, for the overview: which campaigns exist and which are running.
+                // Managing them is the dashboard's job.
+                'campaigns'         => $integration->platform_campaigns() ?: [],
             ]);
         }
 
         public function get_settings()
         {
-            $this->refresh_platform_connection();
             $defaults = wp_list_pluck($this->integration()->form_fields, 'default');
 
             return $this->response(wp_parse_args($this->current_values(), $defaults));
@@ -407,10 +421,18 @@ if (!class_exists('RC_Admin')) {
                     continue;
                 }
 
+                // Anything we do not recognise counts as stopped. Claiming a campaign runs is
+                // the one mistake worth avoiding here: it is what tells a merchant referrals
+                // are going out.
+                $status = isset($campaign['status']) ? (string) $campaign['status'] : '';
+                if (!in_array($status, WC_Referralcandy_Integration::CAMPAIGN_STATUSES, true)) {
+                    $status = 'stopped';
+                }
+
                 $clean[] = [
                     'key'    => $campaign['key'],
                     'name'   => isset($campaign['name']) ? sanitize_text_field((string) $campaign['name']) : '',
-                    'active' => !empty($campaign['active']),
+                    'status' => $status,
                 ];
             }
 
@@ -525,7 +547,6 @@ if (!class_exists('RC_Admin')) {
 
         public function get_onboarding()
         {
-            $this->refresh_platform_connection();
             $store_url = $this->store_url();
             $started = (int) get_option(self::SIGNUP_STARTED_OPTION, 0);
 
@@ -633,6 +654,30 @@ if (!class_exists('RC_Admin')) {
                 // start a signup the merchant has already half done.
                 'reason'    => is_array($status) ? $status['reason'] : null,
             ]);
+        }
+
+        /**
+         * Asks ReferralCandy again, now, instead of waiting for the hourly cycle.
+         *
+         * The connection answer carries the campaign list, and campaigns are what a merchant
+         * changes in the dashboard and then tabs straight back to check. Waiting up to an hour
+         * to see their own change reads as the plugin being broken; polling every page load
+         * would put a network call in front of every admin screen. A button is the honest
+         * middle: nothing happens until someone wants it to.
+         */
+        public function refresh_connection(WP_REST_Request $request)
+        {
+            // Unforced is the app checking in after the screen has painted: the stored answer
+            // is already on screen, and this either confirms it or quietly corrects it. Forced
+            // is the merchant pressing Refresh because they just changed something and want to
+            // see it now, so the interval does not apply to them.
+            if ($request->get_param('force')) {
+                delete_transient(self::PLATFORM_CHECKED_TRANSIENT);
+            }
+
+            $this->refresh_platform_connection();
+
+            return $this->get_settings();
         }
 
         public function verify_credentials()
