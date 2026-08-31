@@ -12,6 +12,7 @@ node_modules
 package.json
 pnpm-lock.yaml
 scripts
+tests
 README.md
 src
 pnpm-workspace.yaml

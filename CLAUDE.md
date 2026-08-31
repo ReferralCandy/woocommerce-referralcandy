@@ -38,7 +38,7 @@ Manual: activate plugin, open the admin app (top-level menu, `admin.php?page=ref
 
 - Bump `Version:` in `woocommerce-referralcandy.php` header, add changelog entry in `readme.txt`, keep `Tested up to` in both files in sync.
 - `pnpm run i18n` regenerates `languages/woocommerce-referralcandy.pot` (wp-env must be running). It scans `includes/` and `src/`, never `build/`. Writes via `/tmp` inside the container and copies out, because the bind mount is not writable from there under rootless podman.
-- Pushing a git tag triggers `.github/workflows/deploy.yml`: pnpm install + `pnpm run build`, then 10up action deploys the working tree to WordPress.org SVN. `build/` is gitignored but ships because 10up filters by `.distignore` only. `.distignore` excludes `src/`, `dev/`, `scripts/`, `assets/`, `.wp-env.json`, etc. Anything dev-only must be listed there.
+- Pushing a git tag triggers `.github/workflows/deploy.yml`: pnpm install + `pnpm run build`, then 10up action deploys the working tree to WordPress.org SVN. `build/` is gitignored but ships because 10up filters by `.distignore` only. `.distignore` excludes `src/`, `dev/`, `scripts/`, `tests/`, `assets/`, `.wp-env.json`, etc. It is a **denylist and the only thing 10up honours** — `scripts/package.mjs`'s `SHIPPED` allowlist governs the local zip only, so a new dev directory has to be added to `.distignore` or it ships. Anything dev-only must be listed there.
 
 ## Flavors (production / staging)
 
