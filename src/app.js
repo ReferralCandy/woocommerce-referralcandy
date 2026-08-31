@@ -53,6 +53,9 @@ export default function App( { config } ) {
 	const platformConnected = data
 		? Boolean( data.platformConnected )
 		: Boolean( config.platformConnected );
+	// Linked, but the account still owes a plan. Survives reloads, unlike the notice, so the
+	// screen can keep pointing at the plan picker instead of offering to connect again.
+	const pendingSetup = Boolean( data?.pendingSetup ?? onboarding?.pendingSetup );
 	const connected =
 		platformConnected ||
 		( data ? hasKeys( data.values ) : config.hasCredentials );
@@ -344,8 +347,13 @@ export default function App( { config } ) {
 								'Your store approved access, but ReferralCandy could not be reached to confirm it. Nothing is lost — try again.',
 								'woocommerce-referralcandy'
 						  )
+						: connecting.proof?.ticket
+						? __(
+								'This approval link has expired or was already used. Approving access again takes a moment and creates nothing new.',
+								'woocommerce-referralcandy'
+						  )
 						: __(
-								'This connection link is no longer valid. Links expire a few minutes after they are issued, and each one can be used once. Approving access again takes a moment and creates nothing new.',
+								'The connection could not be verified. Approving access again takes a moment and creates nothing new.',
 								'woocommerce-referralcandy'
 						  ) }
 				</p>
@@ -419,6 +427,7 @@ export default function App( { config } ) {
 			<Setup
 				step={ sub }
 				onboarding={ onboarding }
+				pendingSetup={ pendingSetup }
 				links={ config.links }
 				navigate={ navigate }
 				starting={ starting }
@@ -488,9 +497,11 @@ export default function App( { config } ) {
 			pageTitle={ pageTitle }
 			headerAction={ headerAction }
 			accountExists={
-				connected || onboarding?.storeExists === true
+				connected || pendingSetup || onboarding?.storeExists === true
 			}
 			connected={ connected }
+			pendingSetup={ pendingSetup }
+			plansUrl={ config.links.plans }
 		>
 			{ notice && data && (
 				<Notice

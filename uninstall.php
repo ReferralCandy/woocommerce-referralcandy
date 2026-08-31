@@ -21,6 +21,7 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
 delete_option('wc_referralcandy_platform_connected');
 delete_option('wc_referralcandy_platform_token');
 delete_option('wc_referralcandy_platform_campaigns');
+delete_option('wc_referralcandy_platform_pending_setup');
 delete_option('wc_referralcandy_signup_started');
 delete_option('wc_referralcandy_plugin_do_activation_redirect');
 

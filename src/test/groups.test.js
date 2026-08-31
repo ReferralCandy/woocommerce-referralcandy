@@ -39,6 +39,25 @@ describe( 'groupsFor', () => {
 		expect( fieldsIn( groupsFor( FIELDS, true ) ) ).toContain( 'app_id' );
 	} );
 
+	it( 'hides the order status from a store whose orders are read, not sent', () => {
+		// submit_purchase() returns early for these stores, so the setting is wired to
+		// nothing; showing it implies the merchant can control ingestion from here.
+		expect( fieldsIn( groupsFor( FIELDS, true ) ) ).not.toContain( 'order_status' );
+	} );
+
+	it( 'keeps the order status for a store that pushes its own orders', () => {
+		expect( fieldsIn( groupsFor( FIELDS ) ) ).toContain( 'order_status' );
+	} );
+
+	it( 'renames the order group once nothing about sending is configurable', () => {
+		const connected = groupsFor( FIELDS, true ).find(
+			( group ) => group.key === 'orders'
+		);
+
+		expect( connected.title ).toBe( 'Tracking' );
+		expect( connected.fields ).toEqual( [ 'tracking_page' ] );
+	} );
+
 	it( 'does not spill hidden keys into the "Other" catch-all', () => {
 		const other = groupsFor( FIELDS, true ).find( ( group ) => group.key === 'other' );
 

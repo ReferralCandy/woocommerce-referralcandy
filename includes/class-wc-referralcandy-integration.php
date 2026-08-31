@@ -222,6 +222,22 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                     ) {
                         return $this->invalid_setting($label);
                     }
+
+                    // The App ID belongs to the connection, not to the merchant. A read-only
+                    // field stops the honest mistake; this stops a stale or hand-made request,
+                    // and keeps a full-form save from clobbering the value on its way past.
+                    if ($key === 'app_id' && $this->has_platform_connection()) {
+                        $stored = isset($current[$key]) ? (string) $current[$key] : '';
+                        if ($value !== $stored) {
+                            if ($stored !== '') {
+                                $value = $stored;
+                            } else {
+                                // Nothing stored to preserve, and inventing one breaks tracking
+                                // quietly. Reconnecting is what fixes this.
+                                return $this->invalid_setting($label);
+                            }
+                        }
+                    }
                 }
 
                 $out[$key] = $value;
@@ -498,12 +514,19 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 ];
 
             foreach ($keys as $key => $label) {
+                // A connected store cannot type its way out of a missing App ID — the field is
+                // read-only because the value is ours to supply — so the message has to name
+                // the thing that actually repairs it.
+                $message = ($key === 'app_id' && $platform_connected)
+                    ? __('ReferralCandy has not supplied an App ID for this store, so the tracking code cannot load. Reconnect the store to fetch it.', 'woocommerce-referralcandy')
+                    /* translators: %s: setting label */
+                    : sprintf(__('%s is not set.', 'woocommerce-referralcandy'), $label);
+
                 $checks[] = [
                     'id'      => $key,
                     'label'   => $label,
                     'ok'      => !empty($this->get_option($key)),
-                    /* translators: %s: setting label */
-                    'message' => sprintf(__('%s is not set.', 'woocommerce-referralcandy'), $label),
+                    'message' => $message,
                 ];
             }
 

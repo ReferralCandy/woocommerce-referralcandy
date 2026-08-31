@@ -40,8 +40,10 @@ function CreateAccount( { onboarding, links, starting, onStart, navigate } ) {
 	return (
 		<>
 			<div className="rc-content">
+				{ /* The sidebar owns the step count. A second one in the page body drifts
+				     out of step with it — the third step is not always the same step. */ }
 				<p className="rc-hero__eyebrow">
-					{ __( 'Step 1 of 3', 'woocommerce-referralcandy' ) }
+					{ __( 'Get started', 'woocommerce-referralcandy' ) }
 				</p>
 				<h1 className="rc-page__title rc-page__title--large">
 					{ __(
@@ -53,7 +55,7 @@ function CreateAccount( { onboarding, links, starting, onStart, navigate } ) {
 					{ sprintf(
 						/* translators: %s: store host name */
 						__(
-							"You'll approve access to %s in WooCommerce, choose a password, and pick a plan on ReferralCandy. Then come back here to finish.",
+							"You'll approve access to %s in WooCommerce, choose a password, and pick a plan on ReferralCandy. You are brought back here automatically when that is done.",
 							'woocommerce-referralcandy'
 						),
 						storeHost
@@ -163,10 +165,15 @@ function CreateAccount( { onboarding, links, starting, onStart, navigate } ) {
 				<p>
 					<a href={ links.signup } target="_blank" rel="noreferrer">
 						{ __(
-							'Sign up on ReferralCandy instead →',
+							'Sign up without connecting this store →',
 							'woocommerce-referralcandy'
 						) }
 					</a>
+					<br />
+					{ __(
+						'You would then have to connect this store yourself afterwards. Kept for stores ReferralCandy cannot match by address.',
+						'woocommerce-referralcandy'
+					) }
 				</p>
 			</aside>
 		</>
@@ -370,6 +377,69 @@ function ResumeBanner( { minutes, links } ) {
 	);
 }
 
+/**
+ * The store is connected to an account that has not chosen a plan.
+ *
+ * Everything technical is done; nothing will happen until it is paid for. Persisted server-side,
+ * so this survives the reload that a dismissible notice does not.
+ */
+function FinishSetup( { onboarding, links } ) {
+	return (
+		<>
+			<div className="rc-content">
+				<p className="rc-hero__eyebrow">
+					{ __( 'Almost there', 'woocommerce-referralcandy' ) }
+				</p>
+				<h1 className="rc-page__title rc-page__title--large">
+					{ __(
+						'Your ReferralCandy account needs a plan',
+						'woocommerce-referralcandy'
+					) }
+				</h1>
+				<p className="rc-page__desc rc-page__desc--wide">
+					{ sprintf(
+						/* translators: %s: store host name */
+						__(
+							'%s is connected and your account exists. Referrals start once a plan is chosen — nothing here needs redoing.',
+							'woocommerce-referralcandy'
+						),
+						host( onboarding.storeUrl )
+					) }
+				</p>
+
+				<div className="rc-actions">
+					<Button
+						variant="primary"
+						href={ links.plans }
+						target="_blank"
+						rel="noreferrer"
+					>
+						{ __(
+							'Choose a plan ↗',
+							'woocommerce-referralcandy'
+						) }
+					</Button>
+				</div>
+
+				<div className="rc-panel">
+					<h5>
+						{ __(
+							'Already chose one?',
+							'woocommerce-referralcandy'
+						) }
+					</h5>
+					<p>
+						{ __(
+							'Reload this page. The plugin re-checks with ReferralCandy each time it opens, and will show your store as connected.',
+							'woocommerce-referralcandy'
+						) }
+					</p>
+				</div>
+			</div>
+		</>
+	);
+}
+
 function EnterKeys( { onboarding, fields, values, onChange, links, onSkip } ) {
 	const startedMinutes = startedMinutesAgo( onboarding );
 
@@ -377,7 +447,7 @@ function EnterKeys( { onboarding, fields, values, onChange, links, onSkip } ) {
 		<>
 			<div className="rc-content">
 				<p className="rc-hero__eyebrow">
-					{ __( 'Step 3 of 3', 'woocommerce-referralcandy' ) }
+					{ __( 'Last step', 'woocommerce-referralcandy' ) }
 				</p>
 				<h1 className="rc-page__title rc-page__title--large">
 					{ __(
@@ -490,6 +560,12 @@ export default function Setup( props ) {
 				<Spinner />
 			</div>
 		);
+	}
+
+	// Linked and unpaid is its own state. Offering "Confirm connection" here asks the merchant
+	// to redo the step that worked, and hides the one that did not.
+	if ( props.pendingSetup ) {
+		return <FinishSetup { ...props } />;
 	}
 
 	return onboarding.storeExists === true ? (

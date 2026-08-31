@@ -30,6 +30,15 @@ if (!class_exists('RC_Admin')) {
         const PLATFORM_CONNECTED_OPTION = 'wc_referralcandy_platform_connected';
         const PLATFORM_TOKEN_OPTION = 'wc_referralcandy_platform_token';
         const PLATFORM_CAMPAIGNS_OPTION = 'wc_referralcandy_platform_campaigns';
+        /**
+         * Set while the store is linked but its account has no plan.
+         *
+         * Persisted rather than left as a notice: a notice dies with the page, and the merchant
+         * who reloads is then shown the generic setup screen offering to confirm a connection
+         * that is already confirmed. What they actually need is the plan picker, and the plugin
+         * has to still know that a reload later.
+         */
+        const PLATFORM_PENDING_OPTION = 'wc_referralcandy_platform_pending_setup';
         const PLATFORM_CHECKED_TRANSIENT = 'wc_referralcandy_platform_checked';
         /** Floor under forced checks, so reloading cannot hammer ReferralCandy. */
         const PLATFORM_FORCED_TRANSIENT = 'wc_referralcandy_platform_forced';
@@ -314,11 +323,22 @@ if (!class_exists('RC_Admin')) {
                 $values['secret_key'] = self::SECRET_MASK;
             }
 
+            // Recomputed here, not trusted from init: a refresh in this same request can flip
+            // the connection state after form_fields was built, and the schema would go out
+            // stale — editable on a store that just connected, or frozen on one that did not.
+            $connected = $integration->has_platform_connection();
+            if (isset($fields['app_id'])) {
+                $fields['app_id']['readonly'] = $connected;
+            }
+
             return rest_ensure_response([
                 'values'            => $values,
                 'fields'            => $fields,
                 'status'            => $integration->get_requirement_checks(),
-                'platformConnected' => $integration->has_platform_connection(),
+                'platformConnected' => $connected,
+                // Linked, but the account still owes a plan. Survives the reload that a notice
+                // does not, so the screen can keep offering the plan picker.
+                'pendingSetup'      => (bool) get_option(self::PLATFORM_PENDING_OPTION, false),
                 // Read-only, for the overview: which campaigns exist and which are running.
                 // Managing them is the dashboard's job.
                 'campaigns'         => $integration->platform_campaigns() ?: [],
@@ -389,6 +409,7 @@ if (!class_exists('RC_Admin')) {
 
             $this->store_campaigns($campaigns);
             $this->store_app_id($app_id);
+            delete_option(self::PLATFORM_PENDING_OPTION);
 
             // The wizard ticks its first two steps off this. Left behind, it claims "account
             // created, access approved" forever — including for a merchant who reset and is
@@ -496,6 +517,7 @@ if (!class_exists('RC_Admin')) {
          * — an outage must never throw a working merchant back into the setup wizard — and is
          * retried sooner than a real answer would be.
          */
+        /** @return bool True when ReferralCandy answered; false when it could not be asked. */
         private function refresh_platform_connection()
         {
             // The token, not the flag, decides whether to keep asking. A store that lost the
@@ -504,11 +526,11 @@ if (!class_exists('RC_Admin')) {
             $token = (string) get_option(self::PLATFORM_TOKEN_OPTION, '');
 
             if ($token === '') {
-                return;
+                return false;
             }
 
             if (get_transient(self::PLATFORM_CHECKED_TRANSIENT)) {
-                return;
+                return false;
             }
 
             $status = RC_Api::connection_status(['statusToken' => $token], $this->store_url());
@@ -517,7 +539,7 @@ if (!class_exists('RC_Admin')) {
                 // Unknown, not disconnected — an outage must never look like a merchant
                 // losing their connection. Retry sooner than a real answer.
                 set_transient(self::PLATFORM_CHECKED_TRANSIENT, 1, 5 * MINUTE_IN_SECONDS);
-                return;
+                return false;
             }
 
             if (!$status['connected']) {
@@ -529,17 +551,21 @@ if (!class_exists('RC_Admin')) {
                     // The store is still linked; its owner simply has not finished choosing a
                     // plan. Keep the token so finishing it is noticed here without making them
                     // approve access all over again, and look again sooner than usual.
+                    update_option(self::PLATFORM_PENDING_OPTION, 1, false);
                     set_transient(self::PLATFORM_CHECKED_TRANSIENT, 1, 5 * MINUTE_IN_SECONDS);
-                    return;
+                    return true;
                 }
 
+                delete_option(self::PLATFORM_PENDING_OPTION);
                 delete_option(self::PLATFORM_TOKEN_OPTION);
                 delete_option(self::PLATFORM_CAMPAIGNS_OPTION);
                 delete_transient(self::PLATFORM_CHECKED_TRANSIENT);
-                return;
+                return true;
             }
 
             $this->remember_connection($status['statusToken'], $status['appId'], $status['campaigns']);
+
+            return true;
         }
 
         // ---- Onboarding -------------------------------------------------------------------
@@ -569,6 +595,7 @@ if (!class_exists('RC_Admin')) {
                 'signupStartedAt' => $started ?: null,
                 'hasCredentials'  => $this->integration()->has_credentials(),
                 'platformConnected' => $this->integration()->has_platform_connection(),
+                'pendingSetup'    => (bool) get_option(self::PLATFORM_PENDING_OPTION, false),
             ]);
         }
 
@@ -661,12 +688,16 @@ if (!class_exists('RC_Admin')) {
 
             if ($connected) {
                 $this->remember_connection($status['statusToken'], $status['appId'], $status['campaigns']);
-            } elseif ($answered && $status['reason'] === 'setup_incomplete' && $status['statusToken']) {
+            } elseif ($answered && $status['reason'] === 'setup_incomplete') {
                 // The store is linked; its owner just has not paid yet. Keep the token even
                 // though the flag stays off, or the merchant is stranded: without it the
                 // re-check bails on an empty token, and approving access again lands them
                 // right back here.
-                update_option(self::PLATFORM_TOKEN_OPTION, $status['statusToken'], false);
+                if ($status['statusToken']) {
+                    update_option(self::PLATFORM_TOKEN_OPTION, $status['statusToken'], false);
+                }
+
+                update_option(self::PLATFORM_PENDING_OPTION, 1, false);
                 delete_transient(self::PLATFORM_CHECKED_TRANSIENT);
             }
 
@@ -699,12 +730,18 @@ if (!class_exists('RC_Admin')) {
             // the merchant asking, but a reload loop is not thirty separate askings — and
             // ReferralCandy caps this route per store, so an unchecked force would turn rapid
             // reloads into 429s that are silently swallowed here.
-            if ($request->get_param('force') && !get_transient(self::PLATFORM_FORCED_TRANSIENT)) {
-                set_transient(self::PLATFORM_FORCED_TRANSIENT, 1, 30);
+            $forcing = $request->get_param('force') && !get_transient(self::PLATFORM_FORCED_TRANSIENT);
+            if ($forcing) {
                 delete_transient(self::PLATFORM_CHECKED_TRANSIENT);
             }
 
-            $this->refresh_platform_connection();
+            $answered = $this->refresh_platform_connection();
+
+            // Spent only on a check that reached ReferralCandy. Charging the floor for a failed
+            // one would make the merchant wait out a pause that bought them no answer.
+            if ($forcing && $answered) {
+                set_transient(self::PLATFORM_FORCED_TRANSIENT, 1, 30);
+            }
 
             return $this->get_settings();
         }

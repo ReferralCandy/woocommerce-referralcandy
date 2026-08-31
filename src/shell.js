@@ -42,7 +42,7 @@ function NavItem( {
 	);
 }
 
-function SetupNav( { sub, accountExists, connected, navigate } ) {
+function SetupNav( { sub, accountExists, connected, pendingSetup, plansUrl, navigate } ) {
 	// The last step depends on which way the merchant went. Connecting through WooCommerce
 	// ends at ReferralCandy's plan picker and never asks for a key, so promising "Enter API
 	// keys" to everyone advertises a chore most merchants will never do — and it is the step
@@ -63,7 +63,9 @@ function SetupNav( { sub, accountExists, connected, navigate } ) {
 			key: 'approve',
 			label: __( 'Approve access', 'woocommerce-referralcandy' ),
 			active: false,
-			done: connected,
+			// A store waiting on a plan has already approved access — treating it as
+			// unfinished tells a merchant to redo the one part they did complete.
+			done: connected || pendingSetup,
 		},
 		enteringKeys
 			? {
@@ -82,8 +84,11 @@ function SetupNav( { sub, accountExists, connected, navigate } ) {
 						'Choose a plan',
 						'woocommerce-referralcandy'
 					),
-					active: false,
-					done: false,
+					// The live step for a store that is linked and unpaid, and the only one
+					// that leaves wp-admin, because that is where the plan is chosen.
+					active: pendingSetup,
+					done: connected,
+					href: pendingSetup ? plansUrl : undefined,
 			  },
 	];
 
@@ -94,7 +99,7 @@ function SetupNav( { sub, accountExists, connected, navigate } ) {
 			</h2>
 			<p className="rc-shell__desc">
 				{ __(
-					"Three steps. Your store's own URL is used; nothing to type.",
+					"Three steps. Your store's URL is filled in automatically.",
 					'woocommerce-referralcandy'
 				) }
 			</p>
@@ -104,8 +109,18 @@ function SetupNav( { sub, accountExists, connected, navigate } ) {
 						key={ step.key }
 						label={ step.label }
 						active={ step.active }
-						disabled={ ! step.to }
-						onClick={ () => step.to && navigate( step.to ) }
+						disabled={ ! step.to && ! step.href }
+						onClick={ () => {
+							if ( step.href ) {
+								window.open(
+									step.href,
+									'_blank',
+									'noreferrer'
+								);
+								return;
+							}
+							if ( step.to ) navigate( step.to );
+						} }
 						trailing={
 							<span
 								className={ `rc-shell__nav-step${
@@ -136,6 +151,8 @@ export default function Shell( {
 	headerAction,
 	accountExists,
 	connected,
+	pendingSetup,
+	plansUrl,
 	children,
 } ) {
 	const inSettings = section === 'settings';
@@ -159,6 +176,8 @@ export default function Shell( {
 						sub={ sub }
 						accountExists={ accountExists }
 						connected={ connected }
+						pendingSetup={ pendingSetup }
+						plansUrl={ plansUrl }
 						navigate={ navigate }
 					/>
 				) }

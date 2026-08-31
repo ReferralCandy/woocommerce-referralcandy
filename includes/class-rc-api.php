@@ -187,6 +187,14 @@ if (!class_exists('RC_Api')) {
                 return ['outcome' => 'unreachable'];
             }
 
+            // Only a definitive refusal counts as rejected. A rate limit or a server fault is
+            // ReferralCandy being unavailable, and telling the merchant their link is dead —
+            // then withdrawing the retry — would be wrong twice over. This plugin's own
+            // request rate makes 429 a realistic answer.
+            if ($result['code'] === 429 || $result['code'] >= 500) {
+                return ['outcome' => 'unreachable'];
+            }
+
             if ($result['code'] !== 200 || !isset($result['body']['connected'])) {
                 return ['outcome' => 'rejected'];
             }
