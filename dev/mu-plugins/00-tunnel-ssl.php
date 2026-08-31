@@ -38,8 +38,10 @@ function is_trusted_forwarded_request( $host ) {
 		return true;
 	}
 
-	if ( substr( $host, -strlen( '.trycloudflare.com' ) ) === '.trycloudflare.com' ) {
-		return true;
+	foreach ( array( '.trycloudflare.com', '.share.zrok.io' ) as $suffix ) {
+		if ( substr( $host, -strlen( $suffix ) ) === $suffix ) {
+			return true;
+		}
 	}
 
 	$configured = getenv( 'WP_TUNNEL_HOST' );
@@ -188,4 +190,20 @@ if ( resolve_host() ) {
 	foreach ( $url_filters as $filter ) {
 		add_filter( $filter, __NAMESPACE__ . '\normalize_url', PHP_INT_MAX );
 	}
+
+	// upload_dir hands back an array, so it needs its own pass. WooCommerce builds
+	// placeholderImgSrc from it, which otherwise reaches the browser as localhost:PORT.
+	add_filter(
+		'upload_dir',
+		function ( $uploads ) {
+			foreach ( array( 'url', 'baseurl' ) as $key ) {
+				if ( ! empty( $uploads[ $key ] ) ) {
+					$uploads[ $key ] = normalize_url( $uploads[ $key ] );
+				}
+			}
+
+			return $uploads;
+		},
+		PHP_INT_MAX
+	);
 }
