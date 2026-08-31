@@ -2,9 +2,6 @@ import { Button, Icon, Spinner } from '@wordpress/components';
 import { check, closeSmall } from '@wordpress/icons';
 import { __, sprintf } from '@wordpress/i18n';
 
-import { SettingsRow } from '../fields';
-
-const KEY_FIELDS = [ 'api_id', 'app_id', 'secret_key' ];
 
 function Check( { ok, label, message } ) {
 	const state = ok === null ? 'wait' : ok ? 'ok' : 'bad';
@@ -33,7 +30,7 @@ function host( url ) {
 	}
 }
 
-function CreateAccount( { onboarding, links, starting, onStart, navigate } ) {
+function CreateAccount( { onboarding, links, starting, onStart, onSkip } ) {
 	const storeHost = host( onboarding.storeUrl );
 	const canStart = onboarding.https && onboarding.canAuthorize && ! starting;
 
@@ -118,14 +115,8 @@ function CreateAccount( { onboarding, links, starting, onStart, navigate } ) {
 							'woocommerce-referralcandy'
 						) }
 					</Button>
-					<Button
-						variant="link"
-						onClick={ () => navigate( '/setup/keys' ) }
-					>
-						{ __(
-							'I already have an account',
-							'woocommerce-referralcandy'
-						) }
+					<Button variant="link" onClick={ onSkip }>
+						{ __( 'Skip for now', 'woocommerce-referralcandy' ) }
 					</Button>
 				</div>
 			</div>
@@ -180,7 +171,7 @@ function CreateAccount( { onboarding, links, starting, onStart, navigate } ) {
 	);
 }
 
-function ExistingAccount( { onboarding, links, starting, onStart, navigate } ) {
+function ExistingAccount( { onboarding, links, starting, onStart, onSkip } ) {
 	// The same approval that creates an account also proves this store to ReferralCandy, so
 	// a store already connected through WooCommerce can be recognised by running it again —
 	// it creates nothing the second time, and the plugin comes back knowing it is connected.
@@ -203,7 +194,7 @@ function ExistingAccount( { onboarding, links, starting, onStart, navigate } ) {
 				</h1>
 				<p className="rc-page__desc rc-page__desc--wide">
 					{ __(
-						'If you already connected this store in ReferralCandy, confirm it below. Otherwise, log in to get the API keys and enter them here.',
+						'Approve access once and this store is linked to that account. Nothing new is created, and there are no keys to copy.',
 						'woocommerce-referralcandy'
 					) }
 				</p>
@@ -256,45 +247,15 @@ function ExistingAccount( { onboarding, links, starting, onStart, navigate } ) {
 								'woocommerce-referralcandy'
 							) }
 						</Button>
+						<Button variant="link" onClick={ onSkip }>
+							{ __(
+								'Skip for now',
+								'woocommerce-referralcandy'
+							) }
+						</Button>
 					</div>
 				</div>
 
-				<div className="rc-panel">
-					<h5>
-						{ __(
-							'Connected with API keys instead?',
-							'woocommerce-referralcandy'
-						) }
-					</h5>
-					<p>
-						{ __(
-							'In ReferralCandy go to Integrations → WooCommerce and copy the API Access ID, App ID and Secret Key.',
-							'woocommerce-referralcandy'
-						) }
-					</p>
-					<div className="rc-actions">
-						<Button
-							variant="secondary"
-							href={ links.integrations }
-							target="_blank"
-							rel="noreferrer"
-						>
-							{ __(
-								'Open ReferralCandy ↗',
-								'woocommerce-referralcandy'
-							) }
-						</Button>
-						<Button
-							variant="primary"
-							onClick={ () => navigate( '/setup/keys' ) }
-						>
-							{ __(
-								'Enter API keys',
-								'woocommerce-referralcandy'
-							) }
-						</Button>
-					</div>
-				</div>
 				<div className="rc-panel">
 					<h5>
 						{ __(
@@ -440,119 +401,8 @@ function FinishSetup( { onboarding, links } ) {
 	);
 }
 
-function EnterKeys( { onboarding, fields, values, onChange, links, onSkip } ) {
-	const startedMinutes = startedMinutesAgo( onboarding );
-
-	return (
-		<>
-			<div className="rc-content">
-				<p className="rc-hero__eyebrow">
-					{ __( 'Last step', 'woocommerce-referralcandy' ) }
-				</p>
-				<h1 className="rc-page__title rc-page__title--large">
-					{ __(
-						'Finish: enter your API keys',
-						'woocommerce-referralcandy'
-					) }
-				</h1>
-				<p className="rc-page__desc rc-page__desc--wide">
-					{ __(
-						'Copy the three values from Integrations → WooCommerce in ReferralCandy. The plugin uses them to send orders and load the tracking script.',
-						'woocommerce-referralcandy'
-					) }
-				</p>
-
-				{ startedMinutes !== null && (
-					<div className="rc-banner">
-						<div>
-							<strong>
-								{ __(
-									'Welcome back.',
-									'woocommerce-referralcandy'
-								) }
-							</strong>{ ' ' }
-							{ sprintf(
-								/* translators: %d: minutes */
-								__(
-									'You started signup from this store %d min ago. Your keys are on the Integrations page —',
-									'woocommerce-referralcandy'
-								),
-								startedMinutes
-							) }{ ' ' }
-							<a
-								href={ links.integrations }
-								target="_blank"
-								rel="noreferrer"
-							>
-								{ __(
-									'open it ↗',
-									'woocommerce-referralcandy'
-								) }
-							</a>
-						</div>
-					</div>
-				) }
-
-				{ KEY_FIELDS.filter( ( key ) => fields[ key ] ).map(
-					( key ) => (
-						<SettingsRow
-							key={ key }
-							id={ key }
-							field={ fields[ key ] }
-							value={ values[ key ] ?? '' }
-							onChange={ ( v ) => onChange( key, v ) }
-						/>
-					)
-				) }
-
-				<div className="rc-actions">
-					<Button variant="link" onClick={ onSkip }>
-						{ __( 'Skip for now', 'woocommerce-referralcandy' ) }
-					</Button>
-				</div>
-			</div>
-
-			<aside className="rc-tips">
-				<h4>{ __( 'Verify', 'woocommerce-referralcandy' ) }</h4>
-				<p>
-					{ __(
-						'Save & verify calls ReferralCandy with your keys and confirms they are accepted before showing the dashboard.',
-						'woocommerce-referralcandy'
-					) }
-				</p>
-				<p>
-					{ __(
-						'If a key is rejected you will see why, and the dashboard keeps flagging it until fixed.',
-						'woocommerce-referralcandy'
-					) }
-				</p>
-				<hr />
-				<h4>
-					{ __( 'Where are my keys?', 'woocommerce-referralcandy' ) }
-				</h4>
-				<p>
-					<a
-						href={ links.integrations }
-						target="_blank"
-						rel="noreferrer"
-					>
-						{ __(
-							'Integrations → WooCommerce ↗',
-							'woocommerce-referralcandy'
-						) }
-					</a>
-				</p>
-			</aside>
-		</>
-	);
-}
-
 export default function Setup( props ) {
-	const { step, onboarding } = props;
-
-	if ( step === 'keys' ) {
-		return <EnterKeys { ...props } />;
-	}
+	const { onboarding } = props;
 
 	if ( ! onboarding ) {
 		return (

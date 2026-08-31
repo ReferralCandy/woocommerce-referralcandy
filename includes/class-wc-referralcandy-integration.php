@@ -73,17 +73,6 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 $tracking_page_options[$page->post_name] = $page->post_title;
             }
 
-            $popup_tooltip_content = '
-                <h4>' . __('Which campaign?', 'woocommerce-referralcandy') . '</h4>
-                <p>' . __('This enables the correct campaign to display in the popup, replacing any other campaign currently shown.', 'woocommerce-referralcandy') . '</p>
-                <h4>' . __('Where to find this?', 'woocommerce-referralcandy') . '</h4>
-                <ol>
-                    <li>' . __('Go to ReferralCandy dashboard', 'woocommerce-referralcandy') . '</li>
-                    <li>' . __('Go to Campaigns > Select campaign name > Widgets > Post-purchase Popup', 'woocommerce-referralcandy') . '</li>
-                    <li>' . __('Go to Woocommerce integration > Copy Campaign Key', 'woocommerce-referralcandy') . '</li>
-                </ol>
-            ';
-
             $this->form_fields = [
                 'api_id' => [
                     'title' => __('API Access ID', 'woocommerce-referralcandy'),
@@ -98,7 +87,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                     'type' => 'text',
                     'desc_tip' => false,
                     'default' => ''
-                ], $this->has_platform_connection() ? ['readonly' => true] : []),
+                ], $this->is_linked() ? ['readonly' => true] : []),
                 'secret_key' => [
                     'title' => __('Secret key', 'woocommerce-referralcandy'),
                     'type' => 'text',
@@ -146,7 +135,6 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 'popup_campaign_key' => array_merge([
                     'title' => __('Campaign', 'woocommerce-referralcandy'),
                     'desc_tip' => true,
-                    'description' => $popup_tooltip_content,
                     'default' => '',
                     'class' => 'popup-campaign-key-field'
                 ], $this->campaign_field_shape()),
@@ -226,7 +214,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                     // The App ID belongs to the connection, not to the merchant. A read-only
                     // field stops the honest mistake; this stops a stale or hand-made request,
                     // and keeps a full-form save from clobbering the value on its way past.
-                    if ($key === 'app_id' && $this->has_platform_connection()) {
+                    if ($key === 'app_id' && $this->is_linked()) {
                         $stored = isset($current[$key]) ? (string) $current[$key] : '';
                         if ($value !== $stored) {
                             if ($stored !== '') {
@@ -425,9 +413,13 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             $campaigns = $this->platform_campaigns();
 
             if (!$campaigns) {
+                // Still a picker, deliberately empty. A text box here would invite a merchant to
+                // go and copy a key out of the dashboard, which is the v2 setup v3 retired — and
+                // a store with no connection has no campaigns to offer in the first place.
                 return [
-                    'type'        => 'text',
-                    'placeholder' => __('Paste campaign key', 'woocommerce-referralcandy'),
+                    'type'        => 'select',
+                    'options'     => ['' => __('Connect your store to choose a campaign', 'woocommerce-referralcandy')],
+                    'description' => __('The offer shown in the popup. Connect your store and its campaigns are listed here.', 'woocommerce-referralcandy'),
                 ];
             }
 
@@ -436,7 +428,13 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                 $options[$campaign['key']] = self::campaign_option_label($campaign);
             }
 
-            return ['type' => 'select', 'options' => $options];
+            // Picking from this list stores the key, so the three steps for copying one out of
+            // the dashboard describe work nobody here has to do.
+            return [
+                'type'        => 'select',
+                'options'     => $options,
+                'description' => __('The offer shown in the popup. Pick one and save.', 'woocommerce-referralcandy'),
+            ];
         }
 
         /** A campaign's name, saying so when picking it would leave the popup silent. */
@@ -491,6 +489,27 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             return (bool) get_option('wc_referralcandy_platform_connected', false);
         }
 
+        /** Approved through wc-auth, but the account behind it has not chosen a plan yet. */
+        public function has_pending_setup()
+        {
+            return (bool) get_option('wc_referralcandy_platform_pending_setup', false);
+        }
+
+        /**
+         * Attached to a ReferralCandy account, paid or not.
+         *
+         * The distinction that matters to WooCommerce is not billing but plumbing: `create`
+         * writes the connection row before the merchant ever reaches the plan picker, so
+         * ReferralCandy already holds this store's WooCommerce credentials and already reads
+         * its orders. Everything that asks "does this plugin still push, and still own the
+         * credentials?" must therefore ask this, not `has_platform_connection()` — a store
+         * waiting on a plan that kept pushing would record every purchase twice.
+         */
+        public function is_linked()
+        {
+            return $this->has_platform_connection() || $this->has_pending_setup();
+        }
+
         /**
          * Requirement checks for the admin notice and the Overview screen.
          *
@@ -499,67 +518,26 @@ if (!class_exists('WC_Referralcandy_Integration')) {
         public function get_requirement_checks()
         {
             $checks = [];
-            // A platform-connected store signs nothing: ReferralCandy pulls its orders with the
-            // WooCommerce credentials it was granted, so the API Access ID and Secret Key do not
-            // apply and warning about them is noise. The App ID still does — the tracking script
-            // is named after it — and it is filled in automatically on connect, so a missing one
-            // is a real fault worth reporting rather than a step the merchant skipped.
             $platform_connected = $this->has_platform_connection();
-            $keys = $platform_connected
-                ? ['app_id' => __('App ID', 'woocommerce-referralcandy')]
-                : [
-                    'api_id'     => __('API Access ID', 'woocommerce-referralcandy'),
-                    'app_id'     => __('App ID', 'woocommerce-referralcandy'),
-                    'secret_key' => __('Secret Key', 'woocommerce-referralcandy'),
-                ];
 
-            foreach ($keys as $key => $label) {
-                // A connected store cannot type its way out of a missing App ID — the field is
-                // read-only because the value is ours to supply — so the message has to name
-                // the thing that actually repairs it.
-                $message = ($key === 'app_id' && $platform_connected)
-                    ? __('ReferralCandy has not supplied an App ID for this store, so the tracking code cannot load. Reconnect the store to fetch it.', 'woocommerce-referralcandy')
-                    /* translators: %s: setting label */
-                    : sprintf(__('%s is not set.', 'woocommerce-referralcandy'), $label);
-
-                $checks[] = [
-                    'id'      => $key,
-                    'label'   => $label,
-                    'ok'      => !empty($this->get_option($key)),
-                    'message' => $message,
-                ];
-            }
-
-            if (!$platform_connected && $this->has_credentials() && class_exists('RC_Api')) {
-                $verified = RC_Api::verify();
-                $checks[] = [
-                    'id'      => 'api_verified',
-                    'label'   => __('API keys verified', 'woocommerce-referralcandy'),
-                    'ok'      => $verified['ok'],
-                    'message' => __('ReferralCandy rejected the API keys — re-copy them from Integrations > WooCommerce.', 'woocommerce-referralcandy') . ' (' . $verified['message'] . ')',
-                ];
-            }
-
-            $checks[] = [
-                'id'      => 'timezone',
-                'label'   => __('Store timezone', 'woocommerce-referralcandy'),
-                'ok'      => !empty(wp_timezone_string()),
-                'message' => __('Set a named store timezone (e.g. Asia/Singapore) under Settings > General.', 'woocommerce-referralcandy'),
-            ];
-
-            $checks[] = [
-                'id'      => 'popup_campaign_key',
-                'label'   => __('Popup campaign key', 'woocommerce-referralcandy'),
-                'ok'      => !$this->is_option_enabled('popup') || !empty($this->get_option('popup_campaign_key')),
-                'message' => __('The post-purchase popup is enabled but has no campaign key.', 'woocommerce-referralcandy'),
-            ];
+            // Keys are a 2.x arrangement, kept working but no longer reported on: v3 shows no
+            // form for them, so a failing key check would name a repair the merchant cannot
+            // reach. What repairs such a store is connecting, which the overview offers.
+            //
+            // Gated on is_linked(), not on the connected flag: a store waiting on a plan has
+            // already handed its credentials over, so it no longer pushes and the settings it
+            // pushes with are no longer worth reporting on.
+            $legacy = !$this->is_linked() && $this->has_credentials();
 
             // Connected, paid, and every campaign stopped still sends nothing — the third way
             // this integration can look finished while doing nothing, and the one the plugin
             // cannot see from inside WooCommerce. A fresh account's campaign starts stopped,
             // so this is the common case rather than an edge one.
+            // Linked is the test, not paid: the campaigns are known either way, and a store
+            // whose every campaign is stopped is worth saying so to whether or not billing is
+            // finished. Otherwise a store waiting on a plan shows an empty status list.
             $campaigns = $this->platform_campaigns();
-            if ($platform_connected && $campaigns !== null) {
+            if ($this->is_linked() && $campaigns !== null) {
                 $active = array_filter($campaigns, function ($campaign) {
                     return $campaign['status'] === 'active';
                 });
@@ -575,7 +553,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
             // Only meaningful when this plugin is the one sending orders. A platform-connected
             // store has them read directly, so checking the setting would report on something
             // that cannot affect anything.
-            if (!$platform_connected) {
+            if ($legacy) {
                 $checks[] = [
                     'id'      => 'order_status',
                     'label'   => __('Order status', 'woocommerce-referralcandy'),

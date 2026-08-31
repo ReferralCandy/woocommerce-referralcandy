@@ -65,22 +65,17 @@ function readyText( ready, platformConnected ) {
 export default function Overview( {
 	status,
 	platformConnected,
+	legacy,
+	pendingSetup,
 	campaigns = [],
 	links,
 	navigate,
 } ) {
-	const byId = Object.fromEntries( status.map( ( s ) => [ s.id, s ] ) );
-	// Platform-connected stores have no key checks in the list at all, so "keys present"
-	// is satisfied by the connection itself.
-	const hasKeys =
-		platformConnected || ( byId.api_id?.ok && byId.secret_key?.ok );
-	const verified = byId.api_verified?.ok;
 	const ready = status.every( ( s ) => s.ok );
-	// Where the hero sends a connected merchant: the connection group is hidden for a
-	// platform-connected store, so its first settings page is order tracking.
-	const settingsTo = platformConnected
-		? '/settings/orders'
-		: '/settings/connection';
+	// Linked but unpaid is still linked: ReferralCandy holds this store's WooCommerce
+	// credentials either way, and its orders are read rather than pushed. Only the hero treats
+	// the two apart, because only such a store still owes a plan.
+	const linked = platformConnected || pendingSetup;
 
 	// A freshly connected store usually fails exactly one check, and no settings page can fix
 	// it: the campaign has to be started at ReferralCandy. Sending them to Settings here is
@@ -91,7 +86,23 @@ export default function Overview( {
 		failing.length === 1 && failing[ 0 ].id === 'campaign_active';
 
 	let hero;
-	if ( onlyNeedsCampaign ) {
+	if ( pendingSetup ) {
+		// Approved already, and waiting on a plan. This has to outrank the legacy offer below:
+		// telling a merchant who just approved access to approve it again hides the one step
+		// that is actually outstanding, and it is not a step this plugin can complete.
+		hero = {
+			title: __(
+				'Your ReferralCandy account needs a plan.',
+				'woocommerce-referralcandy'
+			),
+			text: __(
+				'This store is linked and nothing here needs redoing. Referrals start once a plan is chosen.',
+				'woocommerce-referralcandy'
+			),
+			cta: __( 'Choose a plan ↗', 'woocommerce-referralcandy' ),
+			href: links.plans,
+		};
+	} else if ( onlyNeedsCampaign ) {
 		hero = {
 			title: __(
 				'Connected. Now launch a campaign.',
@@ -104,40 +115,50 @@ export default function Overview( {
 			cta: __( 'Launch a campaign', 'woocommerce-referralcandy' ),
 			href: links.dashboard,
 		};
-	} else if ( ! hasKeys ) {
+	} else if ( legacy ) {
+		// Working, on the older arrangement. Not an error and not nagged as one — but connecting
+		// is the only thing left to do here, so it is the one button offered.
+		hero = {
+			title: __(
+				'Connect this store to ReferralCandy.',
+				'woocommerce-referralcandy'
+			),
+			text: __(
+				'Your store is running on API keys from an earlier setup. They keep working — connecting through WooCommerce replaces them, and there is nothing to copy.',
+				'woocommerce-referralcandy'
+			),
+			cta: __(
+				'Connect through WooCommerce',
+				'woocommerce-referralcandy'
+			),
+			to: '/setup',
+		};
+	} else if ( ! platformConnected ) {
 		hero = {
 			title: __(
 				'Finish connecting your store.',
 				'woocommerce-referralcandy'
 			),
 			text: __(
-				'Enter the API keys from your ReferralCandy account to start sending orders and tracking referrals.',
+				'Approve access in WooCommerce and ReferralCandy takes it from there — no keys to copy.',
 				'woocommerce-referralcandy'
 			),
-			cta: __( 'Enter API keys', 'woocommerce-referralcandy' ),
-			to: '/setup/keys',
-		};
-	} else if ( verified === false ) {
-		hero = {
-			title: __(
-				'ReferralCandy rejected your API keys.',
-				'woocommerce-referralcandy'
-			),
-			text: __(
-				'Orders are not being sent. Re-copy the API Access ID, App ID and Secret Key from Integrations → WooCommerce.',
-				'woocommerce-referralcandy'
-			),
-			cta: __( 'Fix API keys', 'woocommerce-referralcandy' ),
-			to: settingsTo,
+			cta: __( 'Connect your store', 'woocommerce-referralcandy' ),
+			to: '/setup',
 		};
 	} else {
+		// Connected and nothing to fix. The dashboard is where the work happens; settings hold
+		// only checkout and popup details, and the sidebar already leads there.
 		hero = {
 			title: ready
 				? __( 'Your store is connected.', 'woocommerce-referralcandy' )
 				: __( 'Almost there.', 'woocommerce-referralcandy' ),
 			text: readyText( ready, platformConnected ),
-			cta: __( 'Open settings', 'woocommerce-referralcandy' ),
-			to: settingsTo,
+			cta: __(
+				'Open your ReferralCandy dashboard',
+				'woocommerce-referralcandy'
+			),
+			href: links.dashboard,
 		};
 	}
 
@@ -168,17 +189,19 @@ export default function Overview( {
 								{ hero.cta }
 							</Button>
 						) }
-						<Button
-							variant="link"
-							href={ links.dashboard }
-							target="_blank"
-							rel="noreferrer"
-						>
-							{ __(
-								'ReferralCandy dashboard ›',
-								'woocommerce-referralcandy'
-							) }
-						</Button>
+						{ hero.href !== links.dashboard && (
+							<Button
+								variant="link"
+								href={ links.dashboard }
+								target="_blank"
+								rel="noreferrer"
+							>
+								{ __(
+									'ReferralCandy dashboard ›',
+									'woocommerce-referralcandy'
+								) }
+							</Button>
+						) }
 					</div>
 				</section>
 
@@ -188,7 +211,7 @@ export default function Overview( {
 				<p className="rc-page__desc">
 					{ /* Two calls, not a ternary inside __(): a computed string cannot be
 					     extracted for translation. */ }
-					{ platformConnected
+					{ linked
 						? __(
 								'Everything ReferralCandy needs to read this store and reward referrals.',
 								'woocommerce-referralcandy'
@@ -225,10 +248,7 @@ export default function Overview( {
 				{ campaigns.length > 0 && (
 					<>
 						<h2 className="rc-page__subtitle">
-							{ __(
-								'Campaigns',
-								'woocommerce-referralcandy'
-							) }
+							{ __( 'Campaigns', 'woocommerce-referralcandy' ) }
 						</h2>
 						<p className="rc-page__desc">
 							{ __(
@@ -273,10 +293,12 @@ export default function Overview( {
 
 			<aside className="rc-tips">
 				<h4>{ __( 'Get started', 'woocommerce-referralcandy' ) }</h4>
-				{ /* The key-based checklist is meaningless once the store is connected
-				     through WooCommerce: the account exists and there is nothing to paste. */ }
+				{ /* Two checklists, because the next three things to do genuinely differ. The
+				     unconnected one no longer mentions keys: there is no page to paste them
+				     into, and approving access is what sets a store up in v3. A store waiting
+				     on a plan gets the linked list — it has already done the first two. */ }
 				<ol className="rc-steps">
-					{ platformConnected ? (
+					{ linked ? (
 						<>
 							<li>
 								<a
@@ -306,32 +328,20 @@ export default function Overview( {
 					) : (
 						<>
 							<li>
-								<a
-									href={ links.signup }
-									target="_blank"
-									rel="noreferrer"
-								>
-									{ __(
-										'Start your free trial',
-										'woocommerce-referralcandy'
-									) }
-								</a>
-							</li>
-							<li>
-								<a
-									href={ links.integrations }
-									target="_blank"
-									rel="noreferrer"
-								>
-									{ __(
-										'Open Integrations → WooCommerce',
-										'woocommerce-referralcandy'
-									) }
-								</a>
+								{ __(
+									'Press Connect through WooCommerce above.',
+									'woocommerce-referralcandy'
+								) }
 							</li>
 							<li>
 								{ __(
-									'Paste the API Access ID, App ID and Secret Key under Settings → API Connection.',
+									'Approve access in WooCommerce — one click, no keys to copy.',
+									'woocommerce-referralcandy'
+								) }
+							</li>
+							<li>
+								{ __(
+									'Pick a plan on ReferralCandy, and you are brought back here.',
 									'woocommerce-referralcandy'
 								) }
 							</li>

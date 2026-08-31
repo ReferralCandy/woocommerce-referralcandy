@@ -6,25 +6,6 @@ import { __ } from '@wordpress/i18n';
  */
 export const GROUPS = [
 	{
-		key: 'connection',
-		title: __( 'API Connection', 'woocommerce-referralcandy' ),
-		description: __(
-			'Credentials that connect this store to your ReferralCandy account.',
-			'woocommerce-referralcandy'
-		),
-		fields: [ 'api_id', 'app_id', 'secret_key' ],
-		tips: [
-			__(
-				'Find these under Integrations > WooCommerce in your ReferralCandy dashboard.',
-				'woocommerce-referralcandy'
-			),
-			__(
-				'A purchase is required to confirm the integration is working.',
-				'woocommerce-referralcandy'
-			),
-		],
-	},
-	{
 		key: 'orders',
 		title: __( 'Order Tracking', 'woocommerce-referralcandy' ),
 		description: __(
@@ -72,7 +53,7 @@ export const GROUPS = [
 		fields: [ 'popup', 'popup_campaign_key', 'popup_quickfix' ],
 		tips: [
 			__(
-				'The campaign decides which offer the popup shows. A connected store lists its own campaigns here; otherwise paste the key from Campaigns > (campaign) > Widgets > Post-purchase Popup > WooCommerce integration.',
+				'The campaign decides which offer the popup shows. Connect the store and its campaigns are listed here by name.',
 				'woocommerce-referralcandy'
 			),
 			__(
@@ -84,13 +65,16 @@ export const GROUPS = [
 ];
 
 /**
- * Hidden outright when the store is platform-connected, not moved into "Other".
+ * Never shown in v3, in any store shape — but still stored, still validated, still used.
  *
- * `app_id` is deliberately absent: it is not a credential but the public identifier the
- * tracking script is named after, so it stays on screen even though the merchant never has to
- * type it — the connection fills it in.
+ * A connected store owns none of them: ReferralCandy holds the store's own WooCommerce
+ * credentials and supplies the App ID itself. A store still running on v2 keys does own them,
+ * and they keep working untouched — but v3 has one way to set a store up, and it is not a form
+ * that asks a merchant to copy three strings out of a dashboard. Their repair is Connect.
+ *
+ * Kept out of the "Other" catch-all too, or removing the group would simply move them.
  */
-const CONNECTION_FIELDS = new Set( [ 'api_id', 'secret_key' ] );
+const CONNECTION_FIELDS = new Set( [ 'api_id', 'app_id', 'secret_key' ] );
 
 /**
  * Settings that only matter when the plugin is the one sending orders.
@@ -105,61 +89,40 @@ const PUSH_ONLY_FIELDS = new Set( [ 'order_status' ] );
  * @param {Object}  fields            Field schema from PHP.
  * @param {boolean} platformConnected Store connected through wc-auth, which grants
  *                                    ReferralCandy the store's own WooCommerce credentials.
- *                                    Such a store has no API keys to show, so the whole
- *                                    connection group goes away rather than sitting there
- *                                    empty and looking unfinished.
+ *                                    Such a store also has its orders read rather than pushed,
+ *                                    so the order status goes away with them.
  */
 export function groupsFor( fields, platformConnected = false ) {
 	const groups = platformConnected
-		? GROUPS.map( ( group ) => {
-				if ( group.key === 'orders' ) {
-					return {
-						...group,
-						title: __( 'Tracking', 'woocommerce-referralcandy' ),
-						description: __(
-							'Where the ReferralCandy tracking code renders. ReferralCandy reads your orders directly, so there is nothing to configure about sending them.',
-							'woocommerce-referralcandy'
-						),
-						fields: group.fields.filter(
-							( key ) => ! PUSH_ONLY_FIELDS.has( key )
-						),
-						tips: [
-							__(
-								'The tracking code always renders on the order-received page; the selected page is an extra location.',
-								'woocommerce-referralcandy'
-							),
-						],
-					};
-				}
-
-				return group.key === 'connection'
+		? GROUPS.map( ( group ) =>
+				group.key === 'orders'
 					? {
 							...group,
 							title: __(
-								'Connection',
+								'Tracking',
 								'woocommerce-referralcandy'
 							),
 							description: __(
-								'This store is connected through WooCommerce. ReferralCandy reads your orders directly, so no API keys are needed.',
+								'Where the ReferralCandy tracking code renders. ReferralCandy reads your orders directly, so there is nothing to configure about sending them.',
 								'woocommerce-referralcandy'
 							),
 							fields: group.fields.filter(
-								( key ) => ! CONNECTION_FIELDS.has( key )
+								( key ) => ! PUSH_ONLY_FIELDS.has( key )
 							),
 							tips: [
 								__(
-									'The App ID identifies your account to the tracking script on your thank-you page. It is filled in for you when the store connects.',
+									'The tracking code always renders on the order-received page; the selected page is an extra location.',
 									'woocommerce-referralcandy'
 								),
 							],
 					  }
-					: group;
-		  } )
+					: group
+		  )
 		: GROUPS;
 	const known = new Set( groups.flatMap( ( g ) => g.fields ) );
 	const hidden = ( key ) =>
-		platformConnected &&
-		( CONNECTION_FIELDS.has( key ) || PUSH_ONLY_FIELDS.has( key ) );
+		CONNECTION_FIELDS.has( key ) ||
+		( platformConnected && PUSH_ONLY_FIELDS.has( key ) );
 	const other = Object.keys( fields ).filter(
 		( k ) => ! known.has( k ) && ! hidden( k )
 	);

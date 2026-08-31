@@ -20,29 +20,31 @@ const FIELDS = {
 const fieldsIn = ( groups ) => groups.flatMap( ( group ) => group.fields );
 
 describe( 'groupsFor', () => {
-	it( 'shows every credential to a store that connects with API keys', () => {
-		const shown = fieldsIn( groupsFor( FIELDS ) );
-
-		expect( shown ).toEqual( expect.arrayContaining( [ 'api_id', 'app_id', 'secret_key' ] ) );
-	} );
-
-	it( 'hides the keys a platform-connected store will never own', () => {
-		const shown = fieldsIn( groupsFor( FIELDS, true ) );
+	it.each( [
+		[ 'a key-based store', false ],
+		[ 'a connected store', true ],
+	] )( 'shows no credential form to %s', ( _label, platformConnected ) => {
+		// v3 sets a store up one way. The values stay stored, validated and used — there is
+		// simply no form asking a merchant to copy three strings out of a dashboard.
+		const shown = fieldsIn( groupsFor( FIELDS, platformConnected ) );
 
 		expect( shown ).not.toContain( 'api_id' );
 		expect( shown ).not.toContain( 'secret_key' );
+		expect( shown ).not.toContain( 'app_id' );
 	} );
 
-	it( 'keeps the App ID, which names the tracking script', () => {
-		// Hiding it would leave a connected store unable to see or fix the one identifier its
-		// thank-you page actually needs.
-		expect( fieldsIn( groupsFor( FIELDS, true ) ) ).toContain( 'app_id' );
+	it( 'has no connection group left to navigate to', () => {
+		expect( groupsFor( FIELDS ).map( ( g ) => g.key ) ).not.toContain(
+			'connection'
+		);
 	} );
 
 	it( 'hides the order status from a store whose orders are read, not sent', () => {
 		// submit_purchase() returns early for these stores, so the setting is wired to
 		// nothing; showing it implies the merchant can control ingestion from here.
-		expect( fieldsIn( groupsFor( FIELDS, true ) ) ).not.toContain( 'order_status' );
+		expect( fieldsIn( groupsFor( FIELDS, true ) ) ).not.toContain(
+			'order_status'
+		);
 	} );
 
 	it( 'keeps the order status for a store that pushes its own orders', () => {
@@ -59,15 +61,18 @@ describe( 'groupsFor', () => {
 	} );
 
 	it( 'does not spill hidden keys into the "Other" catch-all', () => {
-		const other = groupsFor( FIELDS, true ).find( ( group ) => group.key === 'other' );
+		const other = groupsFor( FIELDS, true ).find(
+			( group ) => group.key === 'other'
+		);
 
 		expect( other ).toBeUndefined();
 	} );
 
 	it( 'still collects genuinely unknown fields, so a new PHP field cannot vanish', () => {
-		const other = groupsFor( { ...FIELDS, brand_new_field: {} }, true ).find(
-			( group ) => group.key === 'other'
-		);
+		const other = groupsFor(
+			{ ...FIELDS, brand_new_field: {} },
+			true
+		).find( ( group ) => group.key === 'other' );
 
 		expect( other?.fields ).toEqual( [ 'brand_new_field' ] );
 	} );

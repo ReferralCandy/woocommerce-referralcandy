@@ -328,7 +328,8 @@ if (!class_exists('RC_Admin')) {
             // stale — editable on a store that just connected, or frozen on one that did not.
             $connected = $integration->has_platform_connection();
             if (isset($fields['app_id'])) {
-                $fields['app_id']['readonly'] = $connected;
+                // Linked is enough: a store waiting on a plan did not choose its App ID either.
+                $fields['app_id']['readonly'] = $integration->is_linked();
             }
 
             return rest_ensure_response([

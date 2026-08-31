@@ -55,7 +55,9 @@ export default function App( { config } ) {
 		: Boolean( config.platformConnected );
 	// Linked, but the account still owes a plan. Survives reloads, unlike the notice, so the
 	// screen can keep pointing at the plan picker instead of offering to connect again.
-	const pendingSetup = Boolean( data?.pendingSetup ?? onboarding?.pendingSetup );
+	const pendingSetup = Boolean(
+		data?.pendingSetup ?? onboarding?.pendingSetup
+	);
 	const connected =
 		platformConnected ||
 		( data ? hasKeys( data.values ) : config.hasCredentials );
@@ -191,17 +193,26 @@ export default function App( { config } ) {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [ section, sub ] );
 
-	// Setup gate: without keys the app opens on the wizard; with keys the wizard is gone.
+	// Setup gate: a store with neither a connection nor keys opens on the wizard. Only a real
+	// platform connection closes it again — a 2.x store still on API keys is working, but
+	// connecting is the one thing it can still do here, so it must be able to walk in.
 	// Suspended while a ticket is in flight — the merchant is mid-connection, and bouncing
 	// them into the wizard would show setup steps they are in the middle of completing.
 	useEffect( () => {
 		if ( connecting ) return;
 		if ( ! connected && ! skipSetup && section !== 'setup' ) {
 			navigate( '/setup' );
-		} else if ( connected && section === 'setup' ) {
+		} else if ( platformConnected && section === 'setup' ) {
 			navigate( '/' );
 		}
-	}, [ connected, skipSetup, section, navigate, connecting ] );
+	}, [
+		connected,
+		platformConnected,
+		skipSetup,
+		section,
+		navigate,
+		connecting,
+	] );
 
 	useEffect( () => {
 		if ( section === 'setup' && ! onboarding ) {
@@ -248,38 +259,6 @@ export default function App( { config } ) {
 			.finally( () => setSaving( false ) );
 	};
 
-	const saveAndVerify = async () => {
-		setSaving( true );
-		setNotice( null );
-		try {
-			await save();
-			const result = await apiFetch( {
-				path: `${ config.onboardingPath }/verify`,
-				method: 'POST',
-			} );
-			// Status list is computed server-side from the (now refreshed) verification.
-			const refreshed = await apiFetch( { path: config.restPath } );
-			setData( refreshed );
-			setDraft( refreshed.values );
-			if ( result.ok ) {
-				setNotice( {
-					status: 'success',
-					message: __(
-						'Connected. Your API keys were verified.',
-						'woocommerce-referralcandy'
-					),
-				} );
-				navigate( '/' );
-			} else {
-				setNotice( { status: 'error', message: result.message } );
-			}
-		} catch ( e ) {
-			setNotice( { status: 'error', message: e.message } );
-		} finally {
-			setSaving( false );
-		}
-	};
-
 	/**
 	 * Re-asks ReferralCandy after the screen has painted, so a change made in the dashboard is
 	 * already reflected by the time the merchant looks. Forced, because opening this screen is
@@ -313,8 +292,10 @@ export default function App( { config } ) {
 		}
 	};
 
+	// Linked, paid or not: such a store owns no credentials and pushes no orders, so it gets
+	// the connected settings shape either way.
 	const groups = data
-		? groupsFor( data.fields, platformConnected )
+		? groupsFor( data.fields, platformConnected || pendingSetup )
 		: GROUPS;
 
 	// "#/settings" lands on the first group.
@@ -367,10 +348,7 @@ export default function App( { config } ) {
 								} ) )
 							}
 						>
-							{ __(
-								'Try again',
-								'woocommerce-referralcandy'
-							) }
+							{ __( 'Try again', 'woocommerce-referralcandy' ) }
 						</Button>
 					) : (
 						<Button
@@ -411,18 +389,6 @@ export default function App( { config } ) {
 		);
 	} else if ( section === 'setup' ) {
 		pageTitle = __( 'Setup', 'woocommerce-referralcandy' );
-		if ( sub === 'keys' ) {
-			headerAction = (
-				<Button
-					variant="primary"
-					isBusy={ saving }
-					disabled={ saving || ! hasKeys( draft ) }
-					onClick={ saveAndVerify }
-				>
-					{ __( 'Save & verify', 'woocommerce-referralcandy' ) }
-				</Button>
-			);
-		}
 		page = (
 			<Setup
 				step={ sub }
@@ -432,11 +398,6 @@ export default function App( { config } ) {
 				navigate={ navigate }
 				starting={ starting }
 				onStart={ startSignup }
-				fields={ data.fields }
-				values={ draft }
-				onChange={ ( key, value ) =>
-					setDraft( { ...draft, [ key ]: value } )
-				}
 				onSkip={ () => {
 					setSkipSetup( true );
 					navigate( '/' );
@@ -475,6 +436,8 @@ export default function App( { config } ) {
 			<Overview
 				status={ data.status }
 				platformConnected={ platformConnected }
+				legacy={ ! platformConnected && hasKeys( data.values ) }
+				pendingSetup={ pendingSetup }
 				campaigns={ data.campaigns || [] }
 				links={ config.links }
 				navigate={ ( to ) => {
@@ -508,9 +471,7 @@ export default function App( { config } ) {
 					status={ notice.status }
 					onRemove={ () => setNotice( null ) }
 					className="rc-notice"
-					{ ...( notice.actions
-						? { actions: notice.actions }
-						: {} ) }
+					{ ...( notice.actions ? { actions: notice.actions } : {} ) }
 				>
 					{ notice.message }
 				</Notice>

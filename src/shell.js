@@ -43,11 +43,6 @@ function NavItem( {
 }
 
 function SetupNav( { sub, accountExists, connected, pendingSetup, plansUrl, navigate } ) {
-	// The last step depends on which way the merchant went. Connecting through WooCommerce
-	// ends at ReferralCandy's plan picker and never asks for a key, so promising "Enter API
-	// keys" to everyone advertises a chore most merchants will never do — and it is the step
-	// left on screen while they decide whether to start at all.
-	const enteringKeys = sub === 'keys';
 	const steps = [
 		{
 			key: 'create',
@@ -67,29 +62,15 @@ function SetupNav( { sub, accountExists, connected, pendingSetup, plansUrl, navi
 			// unfinished tells a merchant to redo the one part they did complete.
 			done: connected || pendingSetup,
 		},
-		enteringKeys
-			? {
-					key: 'keys',
-					label: __(
-						'Enter API keys',
-						'woocommerce-referralcandy'
-					),
-					active: true,
-					done: false,
-					to: '/setup/keys',
-			  }
-			: {
-					key: 'plan',
-					label: __(
-						'Choose a plan',
-						'woocommerce-referralcandy'
-					),
-					// The live step for a store that is linked and unpaid, and the only one
-					// that leaves wp-admin, because that is where the plan is chosen.
-					active: pendingSetup,
-					done: connected,
-					href: pendingSetup ? plansUrl : undefined,
-			  },
+		{
+			key: 'plan',
+			label: __( 'Choose a plan', 'woocommerce-referralcandy' ),
+			// The live step for a store that is linked and unpaid, and the only one that
+			// leaves wp-admin, because that is where the plan is chosen.
+			active: pendingSetup,
+			done: connected,
+			href: pendingSetup ? plansUrl : undefined,
+		},
 	];
 
 	return (

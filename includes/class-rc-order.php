@@ -102,9 +102,12 @@ class RC_Order {
         // A store connected through wc-auth has ReferralCandy pulling its orders already.
         // Pushing them as well would record the same purchase twice and reward the referral
         // twice with it. Keys can still be present on such a store - they are hidden, not
-        // deleted, and a merchant may have pasted them before connecting.
+        // deleted, and a merchant upgraded from 2.x still has the ones they pasted then.
+        //
+        // is_linked(), not has_platform_connection(): the connection row is written before
+        // billing, so a store still choosing a plan is already being read from.
         $integration = WC_Referralcandy::$integration;
-        if ($integration && $integration->has_platform_connection()) {
+        if ($integration && $integration->is_linked()) {
             return;
         }
 

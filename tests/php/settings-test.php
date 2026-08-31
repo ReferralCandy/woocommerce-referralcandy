@@ -47,6 +47,15 @@ $option_key = $integration->get_option_key();
 $restore = get_option($option_key, []);
 $restore_connected = get_option('wc_referralcandy_platform_connected', null);
 $restore_campaigns = get_option('wc_referralcandy_platform_campaigns', null);
+$restore_pending = get_option('wc_referralcandy_platform_pending_setup', null);
+
+// Start from a known shape. Both of these feed is_linked(), which decides whether the App ID is
+// immutable and whether a key-based store still counts as one — so inheriting whatever the
+// install happened to be left in makes the assertions below depend on the last thing anyone did
+// in wp-admin.
+delete_option('wc_referralcandy_platform_connected');
+delete_option('wc_referralcandy_platform_pending_setup');
+$integration->init_settings();
 
 // ---- identifiers -----------------------------------------------------------------------
 
@@ -77,12 +86,81 @@ rc_ok(is_wp_error($popup_without_key), 'enabling the popup without a campaign is
 
 // ---- requirement checks --------------------------------------------------------------
 
+// The option is written for each shape rather than inherited from the site, so what this
+// asserts does not depend on how the install it runs against happens to be configured.
+$keyless = [
+    'api_id'       => '',
+    'secret_key'   => '',
+    'app_id'       => '',
+    'order_status' => 'wc-completed',
+    'popup'        => 'no',
+];
+$legacy = array_merge($keyless, ['api_id' => 'acc123', 'secret_key' => 'sec', 'app_id' => 'app123']);
+
+// Seeded so the api_verified check reads the cache instead of calling ReferralCandy: the
+// keys here are fictional, and a test must not depend on the network.
+set_transient(RC_Api::VERIFY_TRANSIENT, ['ok' => true, 'message' => 'cached for the test'], MINUTE_IN_SECONDS);
+
 delete_option('wc_referralcandy_platform_connected');
 delete_option('wc_referralcandy_platform_campaigns');
+
+// A v3 store that never connected and has no keys is not misconfigured — it is unconnected.
+// Listing missing fields at it advertises a setup path the plugin no longer offers.
+update_option($option_key, $keyless);
+$integration->init_settings();
+rc_is(
+    array_column($integration->get_requirement_checks(), 'id'),
+    [],
+    'a store that has never connected is offered a connection, not a list of missing fields'
+);
+
+// A v2 store upgraded to v3: its keys are the only thing making it work, so they stay checked.
+update_option($option_key, $legacy);
 $integration->init_settings();
 $ids = array_column($integration->get_requirement_checks(), 'id');
-rc_ok(in_array('api_id', $ids, true), 'a key-based store is asked for its API Access ID');
-rc_ok(in_array('secret_key', $ids, true), 'a key-based store is asked for its Secret Key');
+rc_ok(in_array('order_status', $ids, true), 'a grandfathered store is checked on the status whose orders it pushes');
+
+// Retired in v3, which has no credential form at all: reporting a key as unset or rejected
+// would name a repair the merchant cannot reach. Connecting is what repairs such a store.
+// The App ID is supplied on connect, the popup key is refused at save time already, and the
+// timezone check could never fail — wp_timezone_string() falls back to a UTC offset.
+foreach (['api_id', 'secret_key', 'api_verified', 'app_id', 'timezone', 'popup_campaign_key'] as $retired) {
+    rc_ok(!in_array($retired, $ids, true), "the $retired check is retired: $retired");
+}
+
+// Matrix 3c — the v2 merchant finishes the migration: keys still on disk, and now connected
+// through wc-auth (platform_type WoocommerceV2). The keys must go inert rather than double up
+// with ReferralCandy's own reads.
+update_option('wc_referralcandy_platform_connected', 1);
+$ids = array_column($integration->get_requirement_checks(), 'id');
+rc_ok($integration->is_linked(), 'a migrated store counts as linked');
+rc_ok(!in_array('order_status', $ids, true), 'and stops being asked about the status of orders it no longer pushes');
+foreach (['api_id', 'secret_key', 'api_verified'] as $retired) {
+    rc_ok(!in_array($retired, $ids, true), "and its leftover keys are not reported on: $retired");
+}
+
+// Matrix 3d — same store, but the account never chose a plan. rc-main answers
+// setup_incomplete, so the flag is off and only the pending marker is set. The connection row
+// exists either way, so this store is linked: it must not push, and must not be told to
+// connect again.
+delete_option('wc_referralcandy_platform_connected');
+update_option('wc_referralcandy_platform_pending_setup', 1);
+update_option('wc_referralcandy_platform_campaigns', [
+    ['key' => 'camp1', 'name' => 'First campaign', 'status' => 'stopped'],
+], false);
+$integration->init_form_fields();
+$ids = array_column($integration->get_requirement_checks(), 'id');
+rc_ok($integration->is_linked(), 'a store waiting on a plan is linked, not a pushing store');
+rc_ok(!in_array('order_status', $ids, true), 'so it is not asked about the order status either');
+rc_ok(!in_array('api_id', $ids, true), 'nor about the keys it still has on disk');
+rc_ok(in_array('campaign_active', $ids, true), 'but its campaigns are still reported, so the status list is never empty');
+rc_is(
+    $integration->form_fields['app_id']['readonly'] ?? false,
+    true,
+    'and its App ID is read-only, because it did not choose that either'
+);
+delete_option('wc_referralcandy_platform_pending_setup');
+delete_option('wc_referralcandy_platform_campaigns');
 
 update_option('wc_referralcandy_platform_connected', 1);
 update_option('wc_referralcandy_platform_campaigns', [
@@ -96,7 +174,7 @@ $by_id = array_column($checks, 'ok', 'id');
 rc_ok(!in_array('api_id', $ids, true), 'a platform-connected store is not asked for an API Access ID');
 rc_ok(!in_array('secret_key', $ids, true), 'a platform-connected store is not asked for a Secret Key');
 rc_ok(!in_array('api_verified', $ids, true), 'nor for keys to be verified');
-rc_ok(in_array('app_id', $ids, true), 'but the App ID is still checked, because tracking needs it');
+rc_ok(!in_array('order_status', $ids, true), 'nor about the status of orders it does not push');
 rc_is($by_id['campaign_active'] ?? null, false, 'a store whose campaigns are all stopped fails the campaign check');
 
 update_option('wc_referralcandy_platform_campaigns', [
@@ -112,22 +190,38 @@ $integration->init_form_fields();
 $field = $integration->form_fields['popup_campaign_key'];
 rc_is($field['type'], 'select', 'known campaigns make the campaign key a picker');
 rc_ok(isset($field['options']['camp1']), 'the merchant picks a campaign by name, not by key');
+rc_ok(
+    strpos($field['description'], 'Pick one and save') !== false,
+    'picking from the list saves the key, so the steps for copying one out of a dashboard are gone'
+);
 
 delete_option('wc_referralcandy_platform_campaigns');
 $integration->init_form_fields();
+$field = $integration->form_fields['popup_campaign_key'];
 rc_is(
-    $integration->form_fields['popup_campaign_key']['type'],
-    'text',
-    'with no campaigns known it stays a text box, so the setting is never unreachable'
+    $field['type'],
+    'select',
+    'with no campaigns known it is still a picker, never a box inviting a pasted key'
+);
+rc_is(
+    array_keys($field['options']),
+    [''],
+    'and that picker is empty, because an unconnected store has no campaigns to offer'
 );
 
 // ---- restore ---------------------------------------------------------------------------
 
+delete_transient(RC_Api::VERIFY_TRANSIENT);
 update_option($option_key, $restore);
 if ($restore_connected === null) {
     delete_option('wc_referralcandy_platform_connected');
 } else {
     update_option('wc_referralcandy_platform_connected', $restore_connected);
+}
+if ($restore_pending === null) {
+    delete_option('wc_referralcandy_platform_pending_setup');
+} else {
+    update_option('wc_referralcandy_platform_pending_setup', $restore_pending);
 }
 if ($restore_campaigns === null) {
     delete_option('wc_referralcandy_platform_campaigns');

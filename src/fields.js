@@ -21,14 +21,23 @@ function Control( { id, field, value, onChange } ) {
 		const options = Object.entries( field.options || {} ).map(
 			( [ v, label ] ) => ( { value: v, label } )
 		);
-		// Keep a stored value that is no longer an option selectable so the form can still save.
+		// Keep a stored value that is not among the options selectable, or saving any other
+		// setting on the page would silently drop it.
 		if ( value && ! field.options?.[ value ] ) {
+			// Two different situations, and calling both "no longer available" is a lie in one
+			// of them: with a real list to compare against, this value is genuinely gone; with
+			// nothing to compare against, it is simply unnamed until the store connects.
+			const listed = options.some( ( option ) => option.value !== '' );
 			options.unshift( {
 				value,
-				label: `${ value } (${ __(
-					'no longer available',
-					'woocommerce-referralcandy'
-				) })`,
+				label: `${ value } (${
+					listed
+						? __(
+								'no longer available',
+								'woocommerce-referralcandy'
+						  )
+						: __( 'in use', 'woocommerce-referralcandy' )
+				})`,
 			} );
 		}
 		return (
