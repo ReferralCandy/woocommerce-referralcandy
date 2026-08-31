@@ -30,11 +30,14 @@ pnpm 11 via corepack (`packageManager` pinned). Postinstall scripts are disabled
 
 HTTPS tunnel (`scripts/tunnel.mjs`) requires `cloudflared` on PATH. Quick tunnel by default (random `*.trycloudflare.com`); named tunnel via `WP_TUNNEL_HOST=... WP_TUNNEL_NAME=... pnpm run tunnel`. Needed for anything that requires SSL: WC REST key auth, ReferralCandy webhooks, payment gateways.
 
-Testing is manual: activate plugin, fill API keys in the ReferralCandy admin app (top-level menu, `admin.php?page=referralcandy`, Settings > API Connection), place order, move it to configured status, check order note "Order sent to ReferralCandy".
+Automated: `pnpm test` (jest, `src/test/`) and `pnpm run test:php` (`tests/php/settings-test.php`, a plain assertion script run through `wp eval-file` — needs the **unsuffixed** plugin active, since it names `WC_Referralcandy` directly).
+
+Manual: activate plugin, open the admin app (top-level menu, `admin.php?page=referralcandy`), press Connect and approve in WooCommerce. There is no key form any more — a store connects through wc-auth or it is not set up; keys stored by 2.x keep working but are hidden, and `RC_Order::submit_purchase()` no-ops once the store `is_linked()`, because ReferralCandy reads the orders itself. To exercise the push path you need a store with keys and **no** connection: place an order, move it to the configured status, check for the order note "Order sent to ReferralCandy".
 
 ## Release
 
 - Bump `Version:` in `woocommerce-referralcandy.php` header, add changelog entry in `readme.txt`, keep `Tested up to` in both files in sync.
+- `pnpm run i18n` regenerates `languages/woocommerce-referralcandy.pot` (wp-env must be running). It scans `includes/` and `src/`, never `build/`. Writes via `/tmp` inside the container and copies out, because the bind mount is not writable from there under rootless podman.
 - Pushing a git tag triggers `.github/workflows/deploy.yml`: pnpm install + `pnpm run build`, then 10up action deploys the working tree to WordPress.org SVN. `build/` is gitignored but ships because 10up filters by `.distignore` only. `.distignore` excludes `src/`, `dev/`, `scripts/`, `assets/`, `.wp-env.json`, etc. Anything dev-only must be listed there.
 
 ## Flavors (production / staging)

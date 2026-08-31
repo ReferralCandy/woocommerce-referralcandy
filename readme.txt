@@ -89,11 +89,14 @@ We maintain a list of FAQs on our [help page](https://help.referralcandy.com/)!
 == Changelog ==
 
 = 3.0.0 =
-* Guided setup: create your ReferralCandy account and connect the store from the plugin (WooCommerce approval, no key copying), then verify your API keys in place
+* Connect your store in one click: approve ReferralCandy in WooCommerce and your account is created and linked, with no API keys to copy anywhere
+* ReferralCandy then reads your orders directly, so the plugin no longer has to send them
 * New full-screen ReferralCandy admin app (own menu) with Overview, grouped Settings and Help pages; the old WooCommerce > Settings > Integration tab redirects there
+* Overview reports what is actually stopping referrals going out — including an account without a plan, and campaigns that exist but are paused or stopped
+* Post-purchase popup: pick the campaign from a list of your own campaigns by name, instead of pasting a key copied out of the dashboard
+* Upgrading from 2.x: your existing API keys are kept and keep working, and your settings are preserved. The API Access ID, App ID and Secret Key fields are no longer shown — connecting through WooCommerce replaces them, and Overview offers that when you are ready
 * Requires WooCommerce 9.0.1 or higher
 * Declares compatibility with High-Performance Order Storage (HPOS)
-* Existing settings are preserved on upgrade
 
 = 2.5.6 =
 * Update plugin branding: new logo, icons, banners, and screenshots
