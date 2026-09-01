@@ -1,0 +1,8 @@
+# Postinstall scripts pnpm asked about; none are needed for `wp-scripts build`
+# (prebuilt binaries / core-js ad banner), so they stay disabled.
+allowBuilds:
+  '@parcel/watcher': false
+  core-js: false
+  core-js-pure: false
+  fs-ext-extra-prebuilt: false
+  unrs-resolver: false

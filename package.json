@@ -1,5 +1,17 @@
 {
+    "name": "woocommerce-referralcandy",
+    "version": "3.0.0",
+    "private": true,
+    "packageManager": "pnpm@11.24.0",
     "scripts": {
+        "build": "wp-scripts build",
+        "watch": "wp-scripts start",
+        "test": "wp-scripts test-unit-js",
+        "test:watch": "wp-scripts test-unit-js --watch",
+        "test:php": "wp-env run cli wp eval-file wp-content/plugins/woocommerce-referralcandy/tests/php/settings-test.php",
+        "i18n": "wp-env run cli wp i18n make-pot wp-content/plugins/woocommerce-referralcandy /tmp/rc.pot --domain=woocommerce-referralcandy --exclude=build,node_modules,dev,scripts,tests,dist --package-name=\"ReferralCandy for WooCommerce\" && wp-env run cli cat /tmp/rc.pot > languages/woocommerce-referralcandy.pot",
+        "zip": "wp-scripts build && node scripts/package.mjs production",
+        "zip:staging": "wp-scripts build && node scripts/package.mjs staging",
         "start": "wp-env start",
         "start:xdebug": "wp-env start --xdebug",
         "tunnel": "node scripts/tunnel.mjs",
@@ -8,6 +20,9 @@
         "destroy": "wp-env destroy"
     },
     "devDependencies": {
-        "@wordpress/env": "^10.39.0"
+        "@wordpress/env": "^10.39.0",
+        "@wordpress/icons": "^15.4.0",
+        "@wordpress/scripts": "^34.1.0",
+        "adm-zip": "^0.6.0"
     }
 }

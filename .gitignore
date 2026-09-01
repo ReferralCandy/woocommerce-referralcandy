@@ -10,10 +10,13 @@ sitemap.xml
 *.log
 wp-content/cache/
 wp-content/backups/
-sitemap.xml
 sitemap.xml.gz
 node_modules
 .vscode
 .DS_Store
 .wp-env.override.json
 dev/mu-plugins/.tunnel-host
+build
+*.zip
+dist
+.env

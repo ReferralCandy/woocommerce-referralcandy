@@ -71,7 +71,7 @@ Welcome to ReferralCandy! Get started with our easy integration process:
 **Note: If you have already completed your account setup in the ReferralCandy dashboard, you may skip step 1.**
 
 1. Start Your Free Trial: [Sign up here](https://my.referralcandy.com/signup?utm_source=woocommerce-plugin&utm_medium=plugin&utm_campaign=woocommerce-integration-signup).
-2. Integrate with WooCommerce: In your dashboard, go to ["Integrations" > "WooCommerce"](https://my.referralcandy.com/integration).
+2. Integrate with WooCommerce: In your dashboard, go to ["Integrations" > "WooCommerce"](https://my.referralcandy.com/integrations/woocommerce).
 3. Enter API Details: Copy your API Access ID, App ID, and Secret Key and paste it in the Woocommerce plugin integration page.
 
 That's it! Your store is now connected. A purchase is required to confirm integration success.
@@ -87,6 +87,16 @@ We maintain a list of FAQs on our [help page](https://help.referralcandy.com/)!
 1. ReferralCandy for WooCommerce Plugin Settings Page
 
 == Changelog ==
+
+= 3.0.0 =
+* Connect your store in one click: approve ReferralCandy in WooCommerce and your account is created and linked, with no API keys to copy anywhere
+* ReferralCandy then reads your orders directly, so the plugin no longer has to send them
+* New full-screen ReferralCandy admin app (own menu) with Overview, grouped Settings and Help pages; the old WooCommerce > Settings > Integration tab redirects there
+* Overview reports what is actually stopping referrals going out — including an account without a plan, and campaigns that exist but are paused or stopped
+* Post-purchase popup: pick the campaign from a list of your own campaigns by name, instead of pasting a key copied out of the dashboard
+* Upgrading from 2.x: your existing API keys are kept and keep working, and your settings are preserved. The API Access ID, App ID and Secret Key fields are no longer shown — connecting through WooCommerce replaces them, and Overview offers that when you are ready
+* Requires WooCommerce 9.0.1 or higher
+* Declares compatibility with High-Performance Order Storage (HPOS)
 
 = 2.5.6 =
 * Update plugin branding: new logo, icons, banners, and screenshots

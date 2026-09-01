@@ -6,10 +6,13 @@
  * Author: ReferralCandy
  * Author URI: http://www.referralcandy.com
  * Text Domain: woocommerce-referralcandy
- * Version: 2.5.6
+ * Version: 3.0.0
  * Requires at least: 6.4
  * Requires PHP: 7.4
+ * Requires Plugins: woocommerce
  * Tested up to: 6.9.1
+ * WC requires at least: 9.0.1
+ * WC tested up to: 10.9
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,102 +32,131 @@ if (!defined('ABSPATH')) {
     die('Direct access is prohibited.');
 }
 
-function wc_referralcandy_is_woocommerce_active()
-{
-    $active_plugins = apply_filters('active_plugins', get_option('active_plugins', []));
-    if (in_array('woocommerce/woocommerce.php', $active_plugins)) {
-        return true;
-    }
+// Flavor. scripts/package.mjs rewrites these lines for the staging build (every *_BASE value
+// comes from .env there); everything else (integration id, option key, REST namespace, admin
+// path, field ids) derives from them.
+define('WC_REFERRALCANDY_SUFFIX', '');
+define('WC_REFERRALCANDY_LABEL', 'ReferralCandy');
+define('WC_REFERRALCANDY_API_BASE', 'https://my.referralcandy.com/api/v1');
+define('WC_REFERRALCANDY_MAIN_API_BASE', 'https://mainapi.referralcandy.com/v1');
+define('WC_REFERRALCANDY_APP_BASE', 'https://my.referralcandy.com');
 
-    if (is_multisite()) {
-        $network_plugins = array_keys(get_site_option('active_sitewide_plugins', []));
-        if (in_array('woocommerce/woocommerce.php', $network_plugins)) {
-            return true;
-        }
-    }
+define('WC_REFERRALCANDY_PLUGIN_FILE', __FILE__);
+define('WC_REFERRALCANDY_MIN_WC', '9.0.1');
+define('WC_REFERRALCANDY_ID', 'referralcandy' . WC_REFERRALCANDY_SUFFIX);
+define('WC_REFERRALCANDY_SLUG', str_replace('_', '-', WC_REFERRALCANDY_ID));
+define('WC_REFERRALCANDY_ADMIN_URL', 'admin.php?page=' . WC_REFERRALCANDY_SLUG);
 
-    return false;
-}
+if (!class_exists('WC_Referralcandy')) {
+    class WC_Referralcandy
+    {
+        /** @var WC_Referralcandy_Integration|null */
+        public static $integration = null;
 
-if (wc_referralcandy_is_woocommerce_active()) {
-    if (!class_exists('WC_Referralcandy')) {
-        class WC_Referralcandy
+        public function __construct()
         {
-            public function __construct()
-            {
-                add_action('plugins_loaded', array($this, 'init'));
-            }
-
-            public function init()
-            {
-                if (class_exists('WC_Integration')) {
-                    autoload_classes();
-                    add_filter('woocommerce_integrations', [$this, 'add_integration']);
-                } else {
-                    add_action('admin_notices', 'missing_prerequisite_notification');
-                }
-
-                load_plugin_textdomain('woocommerce-referralcandy', false, dirname(plugin_basename(__FILE__)) . '/languages/');
-            }
-
-            public function add_integration($integrations)
-            {
-                $integrations[] = 'WC_Referralcandy_Integration';
-
-                return $integrations;
-            }
+            add_action('plugins_loaded', array($this, 'init'));
         }
 
-        $WC_Referralcandy = new WC_Referralcandy(__FILE__);
-    }
-
-    function autoload_classes()
-    {
-        $files = scandir(dirname(__FILE__) . '/includes');
-        $valid_extensions = ['php'];
-        foreach ($files as $index => $file) {
-            if (in_array(pathinfo($file)['extension'], $valid_extensions)) {
-                require_once('includes/' . pathinfo($file)['basename']);
+        public function init()
+        {
+            if (!class_exists('WooCommerce') || version_compare(WC_VERSION, WC_REFERRALCANDY_MIN_WC, '<')) {
+                delete_option('wc_referralcandy_plugin_do_activation_redirect');
+                add_action('admin_notices', 'wc_referralcandy_missing_prerequisite_notification');
+                return;
             }
+
+            wc_referralcandy_autoload_classes();
+
+            // Instantiated directly instead of via the woocommerce_integrations filter so the
+            // legacy settings section does not appear under WooCommerce > Settings > Integration.
+            // before_woocommerce_init fires at the same point WC_Integrations would have built it.
+            add_action('before_woocommerce_init', array($this, 'instantiate_integration'));
+
+            new RC_Admin();
+
+            add_action('admin_init', 'wc_referralcandy_plugin_redirect');
+            add_action('admin_init', 'wc_referralcandy_legacy_settings_redirect');
+
+            load_plugin_textdomain('woocommerce-referralcandy', false, dirname(plugin_basename(__FILE__)) . '/languages/');
+        }
+
+        public function instantiate_integration()
+        {
+            if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) {
+                \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables', WC_REFERRALCANDY_PLUGIN_FILE, true);
+            }
+
+            self::$integration = new WC_Referralcandy_Integration();
         }
     }
 
-    function wc_referralcandy_plugin_activate()
-    {
-        add_option('wc_referralcandy_plugin_do_activation_redirect', true);
-    }
-
-    function wc_referralcandy_plugin_redirect()
-    {
-        if (get_option('wc_referralcandy_plugin_do_activation_redirect')) {
-            delete_option('wc_referralcandy_plugin_do_activation_redirect');
-
-            if (!isset($_GET['activate-multi'])) {
-                $setup_url = admin_url("admin.php?page=wc-settings&tab=integration&section=referralcandy");
-                wp_redirect($setup_url);
-
-                exit;
-            }
-        }
-    }
-
-    function missing_prerequisite_notification()
-    {
-        $message = 'ReferralCandy <strong>requires</strong> Woocommerce to be installed and activated';
-        printf('<div class="notice notice-error"><p>%1$s</p></div>', $message);
-    }
-
-    function rc_plugin_links($links)
-    {
-        $rc_tab_url = "admin.php?page=wc-settings&tab=integration&section=referralcandy";
-        $settings_link = "<a href='" . esc_url(get_admin_url(null, $rc_tab_url)) . "'>Settings</a>";
-
-        array_unshift($links, $settings_link);
-
-        return $links;
-    }
-
-    register_activation_hook(__FILE__, 'wc_referralcandy_plugin_activate');
-    add_action('admin_init', 'wc_referralcandy_plugin_redirect');
-    add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'rc_plugin_links');
+    new WC_Referralcandy();
 }
+
+function wc_referralcandy_autoload_classes()
+{
+    $files = scandir(dirname(__FILE__) . '/includes');
+    $valid_extensions = ['php'];
+    foreach ($files as $index => $file) {
+        if (in_array(pathinfo($file)['extension'], $valid_extensions)) {
+            require_once('includes/' . pathinfo($file)['basename']);
+        }
+    }
+}
+
+function wc_referralcandy_plugin_activate()
+{
+    add_option('wc_referralcandy_plugin_do_activation_redirect', true);
+}
+
+function wc_referralcandy_plugin_redirect()
+{
+    if (get_option('wc_referralcandy_plugin_do_activation_redirect')) {
+        delete_option('wc_referralcandy_plugin_do_activation_redirect');
+
+        if (!isset($_GET['activate-multi']) && current_user_can('manage_woocommerce')) {
+            wp_safe_redirect(admin_url(WC_REFERRALCANDY_ADMIN_URL));
+
+            exit;
+        }
+    }
+}
+
+// ReferralCandy docs and bookmarks still point at the 2.x settings tab.
+function wc_referralcandy_legacy_settings_redirect()
+{
+    if (
+        isset($_GET['page'], $_GET['tab'], $_GET['section'])
+        && $_GET['page'] === 'wc-settings'
+        && $_GET['tab'] === 'integration'
+        && $_GET['section'] === WC_REFERRALCANDY_ID
+    ) {
+        wp_safe_redirect(admin_url(WC_REFERRALCANDY_ADMIN_URL));
+
+        exit;
+    }
+}
+
+function wc_referralcandy_missing_prerequisite_notification()
+{
+    $message = sprintf(
+        /* translators: 1: plugin label, 2: minimum WooCommerce version */
+        __('%1$s <strong>requires</strong> WooCommerce %2$s or higher to be installed and activated.', 'woocommerce-referralcandy'),
+        WC_REFERRALCANDY_LABEL,
+        WC_REFERRALCANDY_MIN_WC
+    );
+    printf('<div class="notice notice-error"><p>%1$s</p></div>', wp_kses_post($message));
+}
+
+function rc_plugin_links($links)
+{
+    $settings_link = "<a href='" . esc_url(admin_url(WC_REFERRALCANDY_ADMIN_URL)) . "'>Settings</a>";
+
+    array_unshift($links, $settings_link);
+
+    return $links;
+}
+
+register_activation_hook(__FILE__, 'wc_referralcandy_plugin_activate');
+add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'rc_plugin_links');

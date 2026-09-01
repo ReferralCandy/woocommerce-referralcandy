@@ -1,28 +1,748 @@
-# Copyright (C) 2015 ReferralCandy
+# Copyright (C) 2026 ReferralCandy
+# This file is distributed under the same license as the ReferralCandy for WooCommerce – Advanced Referral & Affiliate Program plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: ReferralCandy for WooCommerce 3.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/woocommerce-referralcandy\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-08-31T06:44:43+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: woocommerce-referralcandy\n"
 
-#: includes/class-wc-referralcandy-integration.php:25
+#. Plugin Name of the plugin
+#: woocommerce-referralcandy.php
+msgid "ReferralCandy for WooCommerce – Advanced Referral & Affiliate Program"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: woocommerce-referralcandy.php
+msgid "https://github.com/ReferralCandy/woocommerce-referralcandy"
+msgstr ""
+
+#. Description of the plugin
+#: woocommerce-referralcandy.php
+msgid "Drive sales and customer loyalty with ReferralCandy. Set up effective referral and affiliate programs easily to reward and grow your customer base."
+msgstr ""
+
+#. Author of the plugin
+#: woocommerce-referralcandy.php
 msgid "ReferralCandy"
 msgstr ""
 
-#: includes/class-wc-referralcandy-integration.php:26
-msgid ""
-"Get your App ID and Secret Key from <a target=\"_blank\" href=\"https://my."
-"referralcandy.com/settings\">ReferralCandy Admin Settings &gt; Plugin "
-"tokens</a>"
+#. Author URI of the plugin
+#: woocommerce-referralcandy.php
+msgid "http://www.referralcandy.com"
 msgstr ""
 
-#: includes/class-wc-referralcandy-integration.php:54
+#: includes/class-rc-admin.php:95
+#: src/app.js:434
+#: src/pages/overview.js:170
+#: src/shell.js:214
+msgid "Overview"
+msgstr ""
+
+#: includes/class-rc-admin.php:97
+#: src/shell.js:175
+#: src/shell.js:223
+msgid "Settings"
+msgstr ""
+
+#: includes/class-rc-admin.php:98
+#: src/app.js:431
+#: src/pages/help.js:39
+#: src/shell.js:232
+msgid "Help"
+msgstr ""
+
+#: includes/class-rc-admin.php:126
+msgid "ReferralCandy: admin assets are missing. Run `pnpm run build` in the plugin directory."
+msgstr ""
+
+#: includes/class-rc-admin.php:364
+msgid "Request body must be a JSON object of settings."
+msgstr ""
+
+#: includes/class-rc-admin.php:614
+msgid "Your store must be served over HTTPS before it can be connected to ReferralCandy."
+msgstr ""
+
+#: includes/class-rc-admin.php:629
+msgid "Could not reach ReferralCandy. Check your connection and try again."
+msgstr ""
+
+#: includes/class-rc-admin.php:637
+msgid "ReferralCandy could not start the signup. Try again in a moment."
+msgstr ""
+
+#: includes/class-rc-admin.php:650
+msgid "ReferralCandy returned an unexpected address. Please try again."
+msgstr ""
+
+#: includes/class-rc-admin.php:680
+msgid "A signup ticket is required."
+msgstr ""
+
+#: includes/class-rc-api.php:41
+msgid "API keys are not set."
+msgstr ""
+
+#: includes/class-rc-api.php:243
+msgid "API keys verified."
+msgstr ""
+
+#. translators: %d: HTTP status code
+#: includes/class-rc-api.php:247
+#, php-format
+msgid "ReferralCandy responded with HTTP %d."
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:32
+msgid "Welcome to ReferralCandy! Get started with our easy integration process:<br/><div style=\"background: #fff; border: 1px solid #c3c4c7; width: fit-content;\"><p style=\"padding: 1px 6px; margin: 4px;\">Note: If you have already completed your account setup in the ReferralCandy dashboard, please copy your API Access ID, App ID, and Secret Key below.</p></div><ol><li><b>Start Your Free Trial:</b> Click the Sign Up button below to begin.</li><a href=\"https://my.referralcandy.com/signup?utm_source=woocommerce-plugin&utm_medium=plugin&utm_campaign=woocommerce-integration-signup\" target=\"_blank\" class=\"button\">Sign Up</a><li><b>Integrate with WooCommerce:</b> In your dashboard, go to <a href=\"https://my.referralcandy.com/integration\" target=\"_blank\">\"Integrations\" > \"WooCommerce\"</a>.</li><li><b>Enter API Details:</b> Copy your API Access ID, App ID, and Secret Key and paste here.</li></ol>That's it! Your store is now connected. A purchase is required to confirm integration success.<br/><br/>Need help with integration? Check out our <a href=\"https://www.referralcandy.com/blog/woocommerce-setup?utm_source=woocommerce-plugin&utm_medium=plugin&utm_campaign=woocommerce-integration-blog\" target=\"_blank\">blog</a> for an extensive guide and useful tips."
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:78
+msgid "API Access ID"
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:86
 msgid "App ID"
 msgstr ""
 
-#: includes/class-wc-referralcandy-integration.php:56
-msgid "Enter with your App ID from ReferralCandy"
-msgstr ""
-
-#: includes/class-wc-referralcandy-integration.php:61
+#: includes/class-wc-referralcandy-integration.php:92
 msgid "Secret key"
 msgstr ""
 
-#: includes/class-wc-referralcandy-integration.php:63
-msgid "Enter with your Secret Key from ReferralCandy"
+#: includes/class-wc-referralcandy-integration.php:98
+msgid "Process orders with status"
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:101
+msgid "Orders with this status are sent to ReferralCandy."
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:106
+msgid "Render tracking code on"
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:109
+msgid "Render the tracking code on the selected page."
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:114
+msgid "Enable accepts marketing checkbox on checkout"
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:116
+msgid "Shows/hides the accepts marketing checkbox on the checkout page.<br>NOTE: Turning this off would mark all customers as unsubscribed upon checkout by default."
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:121
+msgid "Accepts marketing checkbox label"
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:124
+msgid "Modify the accepts marketing checkbox label on the checkout page."
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:129
+#: src/groups.js:48
+msgid "Post-purchase Popup"
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:130
+msgid "Enable at checkout"
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:136
+msgid "Campaign"
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:142
+msgid "Post-purchase Popup Quickfix"
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:143
+msgid ""
+"Is the post-purchase popup breaking the checkout page?\n"
+"                        Try enabling this option to apply a quickfix."
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:237
+msgid "Popup campaign key is required when the post-purchase popup is enabled."
+msgstr ""
+
+#. translators: %s: setting label
+#: includes/class-wc-referralcandy-integration.php:250
+#, php-format
+msgid "Invalid value for \"%s\"."
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:421
+msgid "Connect your store to choose a campaign"
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:422
+msgid "The offer shown in the popup. Connect your store and its campaigns are listed here."
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:426
+msgid "Select a campaign"
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:436
+msgid "The offer shown in the popup. Pick one and save."
+msgstr ""
+
+#. translators: %s: campaign name
+#: includes/class-wc-referralcandy-integration.php:449
+#, php-format
+msgid "%s (paused)"
+msgstr ""
+
+#. translators: %s: campaign name
+#: includes/class-wc-referralcandy-integration.php:451
+#, php-format
+msgid "%s (not running)"
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:547
+msgid "Active campaign"
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:549
+msgid "No campaign is running, so no referral emails will go out. Start or resume one in your ReferralCandy dashboard."
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:559
+msgid "Order status"
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:561
+msgid "Re-select the order status that should be sent to ReferralCandy and save."
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:578
+msgid "Please make sure the following settings are configured for your integration to work properly:"
+msgstr ""
+
+#: includes/class-wc-referralcandy-integration.php:582
+msgid "Open settings"
+msgstr ""
+
+#. translators: 1: plugin label, 2: minimum WooCommerce version
+#: woocommerce-referralcandy.php:145
+#, php-format
+msgid "%1$s <strong>requires</strong> WooCommerce %2$s or higher to be installed and activated."
+msgstr ""
+
+#: src/app.js:128
+msgid "Your store is linked, but your ReferralCandy account still needs a plan before referrals can run."
+msgstr ""
+
+#: src/app.js:134
+#: src/shell.js:67
+msgid "Choose a plan"
+msgstr ""
+
+#: src/app.js:154
+msgid "Your store is connected to ReferralCandy."
+msgstr ""
+
+#: src/app.js:250
+msgid "Settings saved."
+msgstr ""
+
+#: src/app.js:316
+msgid "Connecting"
+msgstr ""
+
+#: src/app.js:320
+msgid "Could not confirm the connection"
+msgstr ""
+
+#: src/app.js:327
+msgid "Your store approved access, but ReferralCandy could not be reached to confirm it. Nothing is lost — try again."
+msgstr ""
+
+#: src/app.js:332
+msgid "This approval link has expired or was already used. Approving access again takes a moment and creates nothing new."
+msgstr ""
+
+#: src/app.js:336
+msgid "The connection could not be verified. Approving access again takes a moment and creates nothing new."
+msgstr ""
+
+#: src/app.js:351
+msgid "Try again"
+msgstr ""
+
+#: src/app.js:363
+msgid "Restart connection"
+msgstr ""
+
+#: src/app.js:375
+msgid "Connecting your store…"
+msgstr ""
+
+#: src/app.js:391
+#: src/shell.js:79
+msgid "Setup"
+msgstr ""
+
+#: src/app.js:417
+msgid "Save settings"
+msgstr ""
+
+#: src/fields.js:35
+msgid "no longer available"
+msgstr ""
+
+#: src/fields.js:39
+msgid "in use"
+msgstr ""
+
+#: src/fields.js:66
+msgid "Set automatically when your store connected."
+msgstr ""
+
+#: src/groups.js:10
+msgid "Order Tracking"
+msgstr ""
+
+#: src/groups.js:11
+msgid "When orders are sent to ReferralCandy and where the tracking code renders."
+msgstr ""
+
+#: src/groups.js:17
+msgid "Orders are sent once when they reach the selected status. \"Completed\" is the safest default; use \"Processing\" to reward referrals sooner."
+msgstr ""
+
+#: src/groups.js:21
+#: src/groups.js:113
+msgid "The tracking code always renders on the order-received page; the selected page is an extra location."
+msgstr ""
+
+#: src/groups.js:29
+msgid "Checkout"
+msgstr ""
+
+#: src/groups.js:30
+msgid "The accepts-marketing checkbox shown to customers at checkout."
+msgstr ""
+
+#: src/groups.js:36
+msgid "Turning the checkbox off marks every customer as unsubscribed from referral emails by default."
+msgstr ""
+
+#: src/groups.js:40
+msgid "Works with both the classic shortcode checkout and the block checkout."
+msgstr ""
+
+#: src/groups.js:49
+msgid "Show the ReferralCandy popup on the thank-you page."
+msgstr ""
+
+#: src/groups.js:55
+msgid "The campaign decides which offer the popup shows. Connect the store and its campaigns are listed here by name."
+msgstr ""
+
+#: src/groups.js:59
+msgid "Enable the quickfix only if the popup breaks the layout of your thank-you page."
+msgstr ""
+
+#: src/groups.js:101
+msgid "Tracking"
+msgstr ""
+
+#: src/groups.js:105
+msgid "Where the ReferralCandy tracking code renders. ReferralCandy reads your orders directly, so there is nothing to configure about sending them."
+msgstr ""
+
+#: src/groups.js:135
+msgid "Other"
+msgstr ""
+
+#: src/pages/help.js:7
+msgid "Setup guide"
+msgstr ""
+
+#: src/pages/help.js:8
+msgid "Step-by-step WooCommerce integration walkthrough and tips."
+msgstr ""
+
+#: src/pages/help.js:15
+msgid "Integration settings in ReferralCandy"
+msgstr ""
+
+#: src/pages/help.js:19
+msgid "Where the API Access ID, App ID and Secret Key live."
+msgstr ""
+
+#: src/pages/help.js:26
+msgid "Help center"
+msgstr ""
+
+#: src/pages/help.js:27
+msgid "FAQs and support articles."
+msgstr ""
+
+#: src/pages/help.js:31
+msgid "Plugin changelog"
+msgstr ""
+
+#: src/pages/help.js:32
+msgid "What changed in each release."
+msgstr ""
+
+#: src/pages/help.js:42
+msgid "Guides and support for the ReferralCandy integration."
+msgstr ""
+
+#: src/pages/overview.js:18
+msgid "Running"
+msgstr ""
+
+#: src/pages/overview.js:26
+msgid "Paused"
+msgstr ""
+
+#: src/pages/overview.js:33
+msgid "Not running"
+msgstr ""
+
+#: src/pages/overview.js:44
+msgid "Your store is connected; a few settings below still need attention."
+msgstr ""
+
+#: src/pages/overview.js:48
+msgid "Your keys are verified; a few settings below still need attention."
+msgstr ""
+
+#: src/pages/overview.js:55
+msgid "ReferralCandy reads your orders directly from WooCommerce, so referrals get rewarded automatically."
+msgstr ""
+
+#: src/pages/overview.js:59
+msgid "Orders that reach the configured status are sent to ReferralCandy so referrals get rewarded automatically."
+msgstr ""
+
+#: src/pages/overview.js:94
+msgid "Your ReferralCandy account needs a plan."
+msgstr ""
+
+#: src/pages/overview.js:98
+msgid "This store is linked and nothing here needs redoing. Referrals start once a plan is chosen."
+msgstr ""
+
+#: src/pages/overview.js:102
+#: src/pages/setup.js:378
+msgid "Choose a plan ↗"
+msgstr ""
+
+#: src/pages/overview.js:107
+msgid "Connected. Now launch a campaign."
+msgstr ""
+
+#: src/pages/overview.js:111
+msgid "Your store is talking to ReferralCandy, but no campaign is running yet, so nothing is being sent to your customers."
+msgstr ""
+
+#: src/pages/overview.js:115
+msgid "Launch a campaign"
+msgstr ""
+
+#: src/pages/overview.js:122
+msgid "Connect this store to ReferralCandy."
+msgstr ""
+
+#: src/pages/overview.js:126
+msgid "Your store is running on API keys from an earlier setup. They keep working — connecting through WooCommerce replaces them, and there is nothing to copy."
+msgstr ""
+
+#: src/pages/overview.js:130
+msgid "Connect through WooCommerce"
+msgstr ""
+
+#: src/pages/overview.js:138
+msgid "Finish connecting your store."
+msgstr ""
+
+#: src/pages/overview.js:142
+msgid "Approve access in WooCommerce and ReferralCandy takes it from there — no keys to copy."
+msgstr ""
+
+#: src/pages/overview.js:146
+msgid "Connect your store"
+msgstr ""
+
+#: src/pages/overview.js:154
+msgid "Your store is connected."
+msgstr ""
+
+#: src/pages/overview.js:155
+msgid "Almost there."
+msgstr ""
+
+#: src/pages/overview.js:157
+#: src/pages/overview.js:309
+msgid "Open your ReferralCandy dashboard"
+msgstr ""
+
+#: src/pages/overview.js:199
+msgid "ReferralCandy dashboard ›"
+msgstr ""
+
+#: src/pages/overview.js:209
+msgid "Integration status"
+msgstr ""
+
+#: src/pages/overview.js:215
+msgid "Everything ReferralCandy needs to read this store and reward referrals."
+msgstr ""
+
+#: src/pages/overview.js:219
+msgid "Everything the plugin needs to send orders to ReferralCandy."
+msgstr ""
+
+#: src/pages/overview.js:251
+msgid "Campaigns"
+msgstr ""
+
+#: src/pages/overview.js:254
+msgid "Only a running campaign sends referral emails. Start, pause and edit them in your ReferralCandy dashboard."
+msgstr ""
+
+#: src/pages/overview.js:278
+msgid "Untitled campaign"
+msgstr ""
+
+#: src/pages/overview.js:295
+#: src/pages/setup.js:43
+msgid "Get started"
+msgstr ""
+
+#: src/pages/overview.js:316
+msgid "Set up and launch your referral campaign."
+msgstr ""
+
+#: src/pages/overview.js:322
+msgid "Check the order status and checkout options under Settings."
+msgstr ""
+
+#: src/pages/overview.js:331
+msgid "Press Connect through WooCommerce above."
+msgstr ""
+
+#: src/pages/overview.js:337
+msgid "Approve access in WooCommerce — one click, no keys to copy."
+msgstr ""
+
+#: src/pages/overview.js:343
+msgid "Pick a plan on ReferralCandy, and you are brought back here."
+msgstr ""
+
+#: src/pages/overview.js:352
+#: src/pages/setup.js:286
+msgid "Resources"
+msgstr ""
+
+#: src/pages/overview.js:355
+msgid "Setup guide →"
+msgstr ""
+
+#: src/pages/overview.js:360
+#: src/pages/setup.js:289
+msgid "Help center →"
+msgstr ""
+
+#: src/pages/settings.js:33
+msgid "Tips"
+msgstr ""
+
+#: src/pages/setup.js:46
+msgid "Create your ReferralCandy account"
+msgstr ""
+
+#. translators: %s: store host name
+#: src/pages/setup.js:54
+#, js-format
+msgid "You'll approve access to %s in WooCommerce, choose a password, and pick a plan on ReferralCandy. You are brought back here automatically when that is done."
+msgstr ""
+
+#: src/pages/setup.js:70
+#: src/pages/setup.js:224
+msgid "Store is served over HTTPS"
+msgstr ""
+
+#: src/pages/setup.js:77
+msgid "WooCommerce only shares API access over a secure connection. Ask your host to enable HTTPS for this store, then reload this page."
+msgstr ""
+
+#: src/pages/setup.js:85
+#: src/pages/setup.js:231
+msgid "You can manage WooCommerce on this site"
+msgstr ""
+
+#: src/pages/setup.js:94
+msgid "Could not check for an existing account"
+msgstr ""
+
+#: src/pages/setup.js:98
+msgid "No ReferralCandy account found for this store"
+msgstr ""
+
+#: src/pages/setup.js:113
+msgid "Create account & connect store"
+msgstr ""
+
+#: src/pages/setup.js:119
+#: src/pages/setup.js:251
+msgid "Skip for now"
+msgstr ""
+
+#: src/pages/setup.js:126
+msgid "What happens next"
+msgstr ""
+
+#: src/pages/setup.js:130
+msgid "WooCommerce asks you to approve ReferralCandy — one click, no key copying."
+msgstr ""
+
+#: src/pages/setup.js:136
+msgid "Set a password and pick a plan on ReferralCandy."
+msgstr ""
+
+#: src/pages/setup.js:142
+msgid "You're sent back here to finish."
+msgstr ""
+
+#: src/pages/setup.js:149
+msgid "Requirements"
+msgstr ""
+
+#: src/pages/setup.js:151
+msgid "A public HTTPS store and a WordPress administrator with WooCommerce access."
+msgstr ""
+
+#: src/pages/setup.js:158
+msgid "Sign up without connecting this store →"
+msgstr ""
+
+#: src/pages/setup.js:164
+msgid "You would then have to connect this store yourself afterwards. Kept for stores ReferralCandy cannot match by address."
+msgstr ""
+
+#: src/pages/setup.js:183
+msgid "Account found"
+msgstr ""
+
+#. translators: %s: store host name
+#: src/pages/setup.js:188
+#, js-format
+msgid "%s already has a ReferralCandy account"
+msgstr ""
+
+#: src/pages/setup.js:196
+msgid "Approve access once and this store is linked to that account. Nothing new is created, and there are no keys to copy."
+msgstr ""
+
+#: src/pages/setup.js:209
+msgid "Already connected in ReferralCandy?"
+msgstr ""
+
+#: src/pages/setup.js:215
+msgid "Confirm the connection by approving access once more. Nothing is created, and no API keys are needed."
+msgstr ""
+
+#: src/pages/setup.js:245
+msgid "Confirm connection"
+msgstr ""
+
+#: src/pages/setup.js:261
+msgid "Not your account?"
+msgstr ""
+
+#: src/pages/setup.js:267
+msgid "A store can belong to one ReferralCandy account only. If this store was registered by mistake, contact support."
+msgstr ""
+
+#: src/pages/setup.js:277
+msgid "Why no sign up here"
+msgstr ""
+
+#: src/pages/setup.js:280
+msgid "Each store URL maps to a single ReferralCandy account, so creating another one would fail after the approval step."
+msgstr ""
+
+#: src/pages/setup.js:323
+msgid "Welcome back."
+msgstr ""
+
+#. translators: %d: minutes
+#: src/pages/setup.js:327
+#, js-format
+msgid "You started connecting this store %d min ago. Carry on below, or finish in ReferralCandy —"
+msgstr ""
+
+#: src/pages/setup.js:334
+msgid "open it ↗"
+msgstr ""
+
+#: src/pages/setup.js:352
+msgid "Almost there"
+msgstr ""
+
+#: src/pages/setup.js:355
+msgid "Your ReferralCandy account needs a plan"
+msgstr ""
+
+#. translators: %s: store host name
+#: src/pages/setup.js:363
+#, js-format
+msgid "%s is connected and your account exists. Referrals start once a plan is chosen — nothing here needs redoing."
+msgstr ""
+
+#: src/pages/setup.js:387
+msgid "Already chose one?"
+msgstr ""
+
+#: src/pages/setup.js:393
+msgid "Reload this page. The plugin re-checks with ReferralCandy each time it opens, and will show your store as connected."
+msgstr ""
+
+#: src/shell.js:49
+msgid "Create account"
+msgstr ""
+
+#: src/shell.js:59
+msgid "Approve access"
+msgstr ""
+
+#: src/shell.js:82
+msgid "Three steps. Your store's URL is filled in automatically."
+msgstr ""
+
+#: src/shell.js:148
+msgid "Back to WP Admin"
+msgstr ""
+
+#: src/shell.js:182
+msgid "Configure how the store talks to ReferralCandy."
+msgstr ""
+
+#: src/shell.js:206
+msgid "Referral and affiliate marketing for your WooCommerce store."
+msgstr ""
+
+#: src/shell.js:249
+msgid "Docs"
+msgstr ""
+
+#: src/shell.js:256
+msgid "Support"
 msgstr ""
