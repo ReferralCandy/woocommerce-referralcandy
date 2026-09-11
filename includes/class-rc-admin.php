@@ -759,11 +759,11 @@ if (!class_exists('RC_Admin')) {
                 delete_transient(self::PLATFORM_CHECKED_TRANSIENT);
             }
 
-            $answered = $this->refresh_platform_connection();
+            $this->refresh_platform_connection();
 
-            // Spent only on a check that reached ReferralCandy. Charging the floor for a failed
-            // one would make the merchant wait out a pause that bought them no answer.
-            if ($forcing && $answered) {
+            // Charged for the attempt, not the answer: an unreachable ReferralCandy leaves no
+            // interval behind, so charging only on success let rapid reloads retry every time.
+            if ($forcing) {
                 set_transient(self::PLATFORM_FORCED_TRANSIENT, 1, 30);
             }
 

@@ -26,6 +26,8 @@ if (!class_exists('RC_Api')) {
 
         /** How many of the store's ReferralCandy keys one request offers. Mirrors rc-main's cap. */
         const KEY_PROOF_MAX = 5;
+        /** Rows scanned to fill that cap, since unusable ones are dropped after the query. */
+        const KEY_PROOF_SCAN = 25;
 
         /** Domain tag mixed into every key-proof HMAC. See `key_proofs()`. */
         const KEY_PROOF_DOMAIN = 'rc-wc-key-proof:v1';
@@ -242,12 +244,18 @@ if (!class_exists('RC_Api')) {
         {
             global $wpdb;
 
+            // Unusable rows are excluded here, not after the limit: five newer rows that cannot be
+            // signed with would otherwise hide the older key rc-main actually kept, and the store
+            // would read as not connected. The exact hex shape is still checked in PHP, because
+            // the column's collation decides whether SQL would treat A-F as a match.
             $rows = $wpdb->get_results(
                 $wpdb->prepare(
                     "SELECT truncated_key, consumer_secret FROM {$wpdb->prefix}woocommerce_api_keys
-                     WHERE description LIKE %s ORDER BY key_id DESC LIMIT %d",
+                     WHERE description LIKE %s AND consumer_secret <> ''
+                       AND CHAR_LENGTH(truncated_key) = 7
+                     ORDER BY key_id DESC LIMIT %d",
                     $wpdb->esc_like('ReferralCandy') . '%',
-                    self::KEY_PROOF_MAX
+                    self::KEY_PROOF_SCAN
                 ),
                 ARRAY_A
             );
@@ -267,6 +275,10 @@ if (!class_exists('RC_Api')) {
                 // rather than the batch.
                 if (!preg_match('/^[0-9a-f]{7}$/', $truncated_key) || $secret === '') {
                     continue;
+                }
+
+                if (count($proofs) === self::KEY_PROOF_MAX) {
+                    break;
                 }
 
                 $proofs[] = [

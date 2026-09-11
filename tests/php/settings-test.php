@@ -235,65 +235,55 @@ $integration->init_form_fields();
 //
 // A store connected from the ReferralCandy side holds no ticket and no token, only the wc-auth
 // key WooCommerce minted for ReferralCandy. RC_Api::key_proofs() turns that into something the
-// plugin can send without ever sending the secret. Seeded here with a known secret so the HMAC
-// can be recomputed; WooCommerce writes the description as "<app_name> - API (<date>)".
+// plugin can send without ever sending the secret. Seeded with known secrets so the HMAC can be
+// recomputed here.
 //
-// The dev store legitimately carries real approval rows — the reproduction state for this
-// whole feature, and the credentials ReferralCandy actually holds for this store. They must
-// never be deleted. Instead they are hidden from the `LIKE 'ReferralCandy%'` filter for the
-// duration of this section (a `rc-test-held:` prefix on the description) and restored
-// afterwards. Cleanup is registered as a shutdown function, not just run inline, because a
-// failing assertion here must not leak seeded rows or leave real rows renamed the way an
-// inline-only cleanup did on the very first (fatal) run of this test.
+// Every write below happens inside a transaction that is always rolled back, so nothing outlives
+// this run: not the seeded rows (whose plaintext keys are derivable from this file, and which are
+// read_write API keys), and not the prefix that hides the store's real ReferralCandy rows while
+// key_proofs() is under test. A killed run rolls back with the connection, which a shutdown
+// function cannot promise.
 
 global $wpdb;
 $keys_table = $wpdb->prefix . 'woocommerce_api_keys';
 $rc_test_store_url = 'https://shop.example';
 
-// Registered before the hold/rename loop below, with 'held' starting empty, so a fatal partway
-// through that loop still restores every row renamed so far — the shutdown closure reads
-// $GLOBALS['rc_test_key_cleanup'] at shutdown time, not a snapshot taken now.
-$GLOBALS['rc_test_key_cleanup'] = ['seeded' => [], 'held' => [], 'table' => $keys_table];
+$wpdb->query('START TRANSACTION');
+// Belt to the transaction's braces: a fatal here ends the request without reaching the rollback
+// below, and an explicit one keeps the row locks from waiting on the connection to drop.
 register_shutdown_function(function () {
     global $wpdb;
-    $state = $GLOBALS['rc_test_key_cleanup'];
-    foreach ($state['seeded'] as $key_id) {
-        $wpdb->delete($state['table'], ['key_id' => $key_id]);
-    }
-    foreach ($state['held'] as $key_id) {
-        // The LIKE guard makes this safe even against a killed earlier run: it only unwraps a
-        // row that is actually still held, rather than assuming this run is the one that held it.
-        $wpdb->query($wpdb->prepare(
-            "UPDATE {$state['table']} SET description = SUBSTRING(description, %d)
-             WHERE key_id = %d AND description LIKE %s",
-            strlen('rc-test-held:') + 1,
-            $key_id,
-            $wpdb->esc_like('rc-test-held:') . '%'
-        ));
+    if (!empty($GLOBALS['rc_test_keys_open'])) {
+        $wpdb->query('ROLLBACK');
     }
 });
+$GLOBALS['rc_test_keys_open'] = true;
 
-// Idempotent un-hold for rows a killed earlier run left behind: a SIGKILLed run leaves real
-// rows hidden behind the `rc-test-held:` prefix, invisible to key_proofs(). This puts them back
-// before anything else, so this run starts from the same state a clean run would.
+// The store's real ReferralCandy rows are the reproduction state for this whole feature and the
+// credentials ReferralCandy holds for it. Hidden from the `LIKE 'ReferralCandy%'` filter for the
+// duration, never deleted; the rollback puts the descriptions back.
 $wpdb->query($wpdb->prepare(
-    "UPDATE {$keys_table} SET description = SUBSTRING(description, %d) WHERE description LIKE %s",
-    strlen('rc-test-held:') + 1,
-    $wpdb->esc_like('rc-test-held:') . '%'
-));
-
-$held_key_ids = $wpdb->get_col($wpdb->prepare(
-    "SELECT key_id FROM {$keys_table} WHERE description LIKE %s",
+    "UPDATE {$keys_table} SET description = CONCAT('rc-test-held:', description) WHERE description LIKE %s",
     $wpdb->esc_like('ReferralCandy') . '%'
 ));
-foreach ($held_key_ids as $held_id) {
-    // Recorded before the UPDATE, not after, so a fatal on this exact row still leaves it
-    // registered for the shutdown handler to restore.
-    $GLOBALS['rc_test_key_cleanup']['held'][] = $held_id;
-    $wpdb->query($wpdb->prepare(
-        "UPDATE {$keys_table} SET description = CONCAT('rc-test-held:', description) WHERE key_id = %d",
-        $held_id
-    ));
+
+// State in $GLOBALS, like the counters above: this file is included inside a function, so its
+// top-level variables are locals and `global` in a helper would reach a different, empty one.
+$GLOBALS['rc_test_keys'] = ['table' => $keys_table, 'seeded' => []];
+
+function rc_seed_key(array $row)
+{
+    global $wpdb;
+
+    $wpdb->insert($GLOBALS['rc_test_keys']['table'], [
+        'user_id'         => 1,
+        'description'     => $row['description'],
+        'permissions'     => 'read_write',
+        'consumer_key'    => hash_hmac('sha256', 'ck_' . $row['truncated_key'], 'wc-api'),
+        'consumer_secret' => $row['consumer_secret'],
+        'truncated_key'   => $row['truncated_key'],
+    ]);
+    $GLOBALS['rc_test_keys']['seeded'][ $row['truncated_key'] ] = (int) $wpdb->insert_id;
 }
 
 foreach ([
@@ -302,19 +292,10 @@ foreach ([
     ['description' => 'ReferralCandy - API (2026-09-10 01:50:42)', 'truncated_key' => '2094793', 'consumer_secret' => 'cs_newest'],
     // Contains, not prefix: not an RC key row at all, so the SQL filter must exclude it.
     ['description' => 'My ReferralCandy - API (2026-09-09 00:00:00)', 'truncated_key' => 'bbbbbbb', 'consumer_secret' => 'cs_contains'],
-    // A blank secret cannot be signed with, so key_proofs() must skip it even though the
-    // description and truncated key are otherwise well-formed.
+    // A blank secret cannot be signed with, so it must never be offered.
     ['description' => 'ReferralCandy - API (2026-09-09 12:00:00)', 'truncated_key' => 'ccccccc', 'consumer_secret' => ''],
 ] as $row) {
-    $wpdb->insert($keys_table, [
-        'user_id'         => 1,
-        'description'     => $row['description'],
-        'permissions'     => 'read_write',
-        'consumer_key'    => hash_hmac('sha256', 'ck_' . $row['truncated_key'], 'wc-api'),
-        'consumer_secret' => $row['consumer_secret'],
-        'truncated_key'   => $row['truncated_key'],
-    ]);
-    $GLOBALS['rc_test_key_cleanup']['seeded'][] = (int) $wpdb->insert_id;
+    rc_seed_key($row);
 }
 
 $proofs = RC_Api::key_proofs($rc_test_store_url);
@@ -340,36 +321,59 @@ foreach ($proofs as $proof) {
     rc_is(array_keys($proof), ['truncatedKey', 'timestamp', 'signature'], 'a proof carries exactly three fields');
 }
 
-// The excluded-row fixtures have done their job; gone before the cap test below, so a row that
-// merely occupies the newest-5 window without ever being a valid proof cannot squeeze a genuine
-// one out of it.
-$wpdb->delete($keys_table, ['truncated_key' => 'bbbbbbb']);
-$wpdb->delete($keys_table, ['truncated_key' => 'ccccccc']);
+// Five unusable rows newer than a valid one. They must not occupy the cap: rc-main keeps one key
+// and it can be the oldest, so a store whose newest rows are junk would otherwise read as never
+// connected. Unusable means what rc-main refuses a whole batch over — a blank secret, or a
+// truncated_key that is not 7 hex characters.
+foreach ([
+    ['description' => 'ReferralCandy - API (2026-09-12 00:00:00)', 'truncated_key' => 'nothex1', 'consumer_secret' => 'cs_junk1'],
+    ['description' => 'ReferralCandy - API (2026-09-12 00:00:01)', 'truncated_key' => 'ZZZZZZZ', 'consumer_secret' => 'cs_junk2'],
+    ['description' => 'ReferralCandy - API (2026-09-12 00:00:02)', 'truncated_key' => 'abc', 'consumer_secret' => 'cs_junk3'],
+    ['description' => 'ReferralCandy - API (2026-09-12 00:00:03)', 'truncated_key' => 'deadbee', 'consumer_secret' => ''],
+    ['description' => 'ReferralCandy - API (2026-09-12 00:00:04)', 'truncated_key' => 'ffffff0', 'consumer_secret' => ''],
+] as $row) {
+    rc_seed_key($row);
+}
 
-// Six ReferralCandy rows: the cap holds. truncated_key must be 7 lowercase hex chars — the
-// shape key_proofs() now requires — or these rows would be pre-filtered out instead of capped.
+$with_junk = array_column(RC_Api::key_proofs($rc_test_store_url), 'truncatedKey');
+rc_ok(in_array('2094793', $with_junk, true), 'an unusable newer row does not hide a usable older key');
+rc_ok(in_array('eb26314', $with_junk, true), 'nor the one behind it');
+rc_is(count($with_junk), 2, 'and unusable rows are not offered themselves');
+
+// Back to two candidates, then six, so the cap itself can be checked.
+foreach (['nothex1', 'ZZZZZZZ', 'abc', 'deadbee', 'ffffff0', 'bbbbbbb', 'ccccccc'] as $key) {
+    $wpdb->delete($keys_table, ['key_id' => $GLOBALS['rc_test_keys']['seeded'][ $key ]]);
+}
+
 for ($i = 0; $i < 4; $i++) {
-    $wpdb->insert($keys_table, [
-        'user_id'         => 1,
+    rc_seed_key([
         'description'     => 'ReferralCandy - API (2026-09-11 00:00:0' . $i . ')',
-        'permissions'     => 'read_write',
-        'consumer_key'    => hash_hmac('sha256', 'ck_extra' . $i, 'wc-api'),
-        'consumer_secret' => 'cs_extra' . $i,
         'truncated_key'   => sprintf('fab000%d', $i),
+        'consumer_secret' => 'cs_extra' . $i,
     ]);
-    $GLOBALS['rc_test_key_cleanup']['seeded'][] = (int) $wpdb->insert_id;
 }
 rc_is(count(RC_Api::key_proofs($rc_test_store_url)), 5, 'at most five keys are offered');
 
-foreach ($GLOBALS['rc_test_key_cleanup']['seeded'] as $key_id) {
+foreach ($GLOBALS['rc_test_keys']['seeded'] as $key_id) {
     $wpdb->delete($keys_table, ['key_id' => $key_id]);
 }
-$GLOBALS['rc_test_key_cleanup']['seeded'] = [];
 
-// With every seeded row deleted and every held real row still hidden behind its
-// `rc-test-held:` prefix, no row matches `LIKE 'ReferralCandy%'` — the empty case is
-// deterministic, not conditional on what this store happened to hold before the test ran.
+// Every seeded row gone and every real row still hidden: the empty case is deterministic rather
+// than conditional on what this store happened to hold.
 rc_is(RC_Api::key_proofs($rc_test_store_url), [], 'a store with no ReferralCandy key offers nothing');
+
+// Undoes the hold, the seeds, and anything an assertion above left behind.
+$wpdb->query('ROLLBACK');
+$GLOBALS['rc_test_keys_open'] = false;
+
+rc_is(
+    (int) $wpdb->get_var($wpdb->prepare(
+        "SELECT COUNT(*) FROM {$keys_table} WHERE description LIKE %s",
+        $wpdb->esc_like('rc-test-held:') . '%'
+    )),
+    0,
+    'the rollback leaves no held row behind'
+);
 
 // ---- report -----------------------------------------------------------------------------
 
