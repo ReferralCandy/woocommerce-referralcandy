@@ -250,18 +250,10 @@ global $wpdb;
 $keys_table = $wpdb->prefix . 'woocommerce_api_keys';
 $rc_test_store_url = 'https://shop.example';
 
-$held_key_ids = $wpdb->get_col($wpdb->prepare(
-    "SELECT key_id FROM {$keys_table} WHERE description LIKE %s",
-    $wpdb->esc_like('ReferralCandy') . '%'
-));
-foreach ($held_key_ids as $held_id) {
-    $wpdb->query($wpdb->prepare(
-        "UPDATE {$keys_table} SET description = CONCAT('rc-test-held:', description) WHERE key_id = %d",
-        $held_id
-    ));
-}
-
-$GLOBALS['rc_test_key_cleanup'] = ['seeded' => [], 'held' => $held_key_ids, 'table' => $keys_table];
+// Registered before the hold/rename loop below, with 'held' starting empty, so a fatal partway
+// through that loop still restores every row renamed so far — the shutdown closure reads
+// $GLOBALS['rc_test_key_cleanup'] at shutdown time, not a snapshot taken now.
+$GLOBALS['rc_test_key_cleanup'] = ['seeded' => [], 'held' => [], 'table' => $keys_table];
 register_shutdown_function(function () {
     global $wpdb;
     $state = $GLOBALS['rc_test_key_cleanup'];
@@ -276,6 +268,20 @@ register_shutdown_function(function () {
         ));
     }
 });
+
+$held_key_ids = $wpdb->get_col($wpdb->prepare(
+    "SELECT key_id FROM {$keys_table} WHERE description LIKE %s",
+    $wpdb->esc_like('ReferralCandy') . '%'
+));
+foreach ($held_key_ids as $held_id) {
+    // Recorded before the UPDATE, not after, so a fatal on this exact row still leaves it
+    // registered for the shutdown handler to restore.
+    $GLOBALS['rc_test_key_cleanup']['held'][] = $held_id;
+    $wpdb->query($wpdb->prepare(
+        "UPDATE {$keys_table} SET description = CONCAT('rc-test-held:', description) WHERE key_id = %d",
+        $held_id
+    ));
+}
 
 foreach ([
     ['description' => 'Someone Else - API (2026-09-01 00:00:00)', 'truncated_key' => 'aaaaaaa', 'consumer_secret' => 'cs_other'],

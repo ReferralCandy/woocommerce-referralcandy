@@ -235,8 +235,8 @@ if (!class_exists('RC_Api')) {
          * an abandoned approval mints a row rc-main never received. WooCommerce writes the
          * description as "<app_name> - API (<date>)", and rc-main's app_name is ReferralCandy.
          *
-         * @return array[] Each ['truncatedKey' => string, 'timestamp' => int, 'signature' => string];
-         *                 empty when the store holds no such key.
+         * @return array Each entry ['truncatedKey' => string, 'timestamp' => int, 'signature' => string];
+         *               empty when the store holds no such key.
          */
         public static function key_proofs($store_url)
         {
@@ -263,6 +263,8 @@ if (!class_exists('RC_Api')) {
             foreach ($rows as $row) {
                 $truncated_key = (string) $row['truncated_key'];
                 $secret = (string) $row['consumer_secret'];
+                // A row WooCommerce couldn't fully write, or one a merchant edited by hand,
+                // has nothing to sign with; skip it rather than let it stop the others.
                 if ($truncated_key === '' || $secret === '') {
                     continue;
                 }
