@@ -517,6 +517,9 @@ if (!class_exists('RC_Admin')) {
          * on storefront requests. An unreachable ReferralCandy leaves the stored answer alone
          * — an outage must never throw a working merchant back into the setup wizard — and is
          * retried sooner than a real answer would be.
+         *
+         * A store with no token asks with key proofs instead (`RC_Api::key_proofs()`), which is
+         * how a connection made from the ReferralCandy dashboard reaches this plugin at all.
          */
         /** @return bool True when ReferralCandy answered; false when it could not be asked. */
         private function refresh_platform_connection()
@@ -526,7 +529,15 @@ if (!class_exists('RC_Admin')) {
             // they pay, without approving access all over again.
             $token = (string) get_option(self::PLATFORM_TOKEN_OPTION, '');
 
-            if ($token === '') {
+            // No token means this plugin never saw a return leg: the store was connected from
+            // the ReferralCandy side, or installed onto an already-connected store. It can still
+            // prove itself with the wc-auth key WooCommerce minted for ReferralCandy — and a
+            // store with no such key has never been connected, so there is nothing to ask.
+            $proof = $token !== ''
+                ? ['statusToken' => $token]
+                : ['keyProofs' => RC_Api::key_proofs($this->store_url())];
+
+            if ($token === '' && $proof['keyProofs'] === []) {
                 return false;
             }
 
@@ -534,7 +545,7 @@ if (!class_exists('RC_Admin')) {
                 return false;
             }
 
-            $status = RC_Api::connection_status(['statusToken' => $token], $this->store_url());
+            $status = RC_Api::connection_status($proof, $this->store_url());
 
             if ($status['outcome'] !== 'ok') {
                 // Unknown, not disconnected — an outage must never look like a merchant
