@@ -237,12 +237,46 @@ $integration->init_form_fields();
 // key WooCommerce minted for ReferralCandy. RC_Api::key_proofs() turns that into something the
 // plugin can send without ever sending the secret. Seeded here with a known secret so the HMAC
 // can be recomputed; WooCommerce writes the description as "<app_name> - API (<date>)".
+//
+// The dev store legitimately carries real approval rows — the reproduction state for this
+// whole feature, and the credentials ReferralCandy actually holds for this store. They must
+// never be deleted. Instead they are hidden from the `LIKE 'ReferralCandy%'` filter for the
+// duration of this section (a `rc-test-held:` prefix on the description) and restored
+// afterwards. Cleanup is registered as a shutdown function, not just run inline, because a
+// failing assertion here must not leak seeded rows or leave real rows renamed the way an
+// inline-only cleanup did on the very first (fatal) run of this test.
 
 global $wpdb;
 $keys_table = $wpdb->prefix . 'woocommerce_api_keys';
 $rc_test_store_url = 'https://shop.example';
 
-$seeded_key_ids = [];
+$held_key_ids = $wpdb->get_col($wpdb->prepare(
+    "SELECT key_id FROM {$keys_table} WHERE description LIKE %s",
+    $wpdb->esc_like('ReferralCandy') . '%'
+));
+foreach ($held_key_ids as $held_id) {
+    $wpdb->query($wpdb->prepare(
+        "UPDATE {$keys_table} SET description = CONCAT('rc-test-held:', description) WHERE key_id = %d",
+        $held_id
+    ));
+}
+
+$GLOBALS['rc_test_key_cleanup'] = ['seeded' => [], 'held' => $held_key_ids, 'table' => $keys_table];
+register_shutdown_function(function () {
+    global $wpdb;
+    $state = $GLOBALS['rc_test_key_cleanup'];
+    foreach ($state['seeded'] as $key_id) {
+        $wpdb->delete($state['table'], ['key_id' => $key_id]);
+    }
+    foreach ($state['held'] as $key_id) {
+        $wpdb->query($wpdb->prepare(
+            "UPDATE {$state['table']} SET description = SUBSTRING(description, %d) WHERE key_id = %d",
+            strlen('rc-test-held:') + 1,
+            $key_id
+        ));
+    }
+});
+
 foreach ([
     ['description' => 'Someone Else - API (2026-09-01 00:00:00)', 'truncated_key' => 'aaaaaaa', 'consumer_secret' => 'cs_other'],
     ['description' => 'ReferralCandy - API (2026-09-08 07:35:03)', 'truncated_key' => 'eb26314', 'consumer_secret' => 'cs_older'],
@@ -256,7 +290,7 @@ foreach ([
         'consumer_secret' => $row['consumer_secret'],
         'truncated_key'   => $row['truncated_key'],
     ]);
-    $seeded_key_ids[] = (int) $wpdb->insert_id;
+    $GLOBALS['rc_test_key_cleanup']['seeded'][] = (int) $wpdb->insert_id;
 }
 
 $proofs = RC_Api::key_proofs($rc_test_store_url);
@@ -277,7 +311,6 @@ foreach ($proofs as $proof) {
 }
 
 // Six ReferralCandy rows: the cap holds.
-$extra_key_ids = [];
 for ($i = 0; $i < 4; $i++) {
     $wpdb->insert($keys_table, [
         'user_id'         => 1,
@@ -287,18 +320,19 @@ for ($i = 0; $i < 4; $i++) {
         'consumer_secret' => 'cs_extra' . $i,
         'truncated_key'   => 'extra0' . $i,
     ]);
-    $extra_key_ids[] = (int) $wpdb->insert_id;
+    $GLOBALS['rc_test_key_cleanup']['seeded'][] = (int) $wpdb->insert_id;
 }
 rc_is(count(RC_Api::key_proofs($rc_test_store_url)), 5, 'at most five keys are offered');
 
-foreach (array_merge($seeded_key_ids, $extra_key_ids) as $key_id) {
+foreach ($GLOBALS['rc_test_key_cleanup']['seeded'] as $key_id) {
     $wpdb->delete($keys_table, ['key_id' => $key_id]);
 }
+$GLOBALS['rc_test_key_cleanup']['seeded'] = [];
 
-$before_count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$keys_table} WHERE description LIKE 'ReferralCandy%'");
-if ($before_count === 0) {
-    rc_is(RC_Api::key_proofs($rc_test_store_url), [], 'a store with no ReferralCandy key offers nothing');
-}
+// With every seeded row deleted and every held real row still hidden behind its
+// `rc-test-held:` prefix, no row matches `LIKE 'ReferralCandy%'` — the empty case is
+// deterministic, not conditional on what this store happened to hold before the test ran.
+rc_is(RC_Api::key_proofs($rc_test_store_url), [], 'a store with no ReferralCandy key offers nothing');
 
 // ---- report -----------------------------------------------------------------------------
 
