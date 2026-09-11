@@ -24,6 +24,14 @@ if (!class_exists('RC_Api')) {
         const STORE_EXISTS_TRANSIENT = 'wc_referralcandy_store_exists';
         const TIMEOUT = 10;
 
+        /** How many of the store's ReferralCandy keys one request offers. Mirrors rc-main's cap. */
+        const KEY_PROOF_MAX = 5;
+        /** Rows scanned to fill that cap, since unusable ones are dropped after the query. */
+        const KEY_PROOF_SCAN = 25;
+
+        /** Domain tag mixed into every key-proof HMAC. See `key_proofs()`. */
+        const KEY_PROOF_DOMAIN = 'rc-wc-key-proof:v1';
+
         /**
          * Signed request to the external API.
          *
@@ -158,13 +166,16 @@ if (!class_exists('RC_Api')) {
         /**
          * Asks ReferralCandy whether this store is connected through wc-auth.
          *
-         * Two proofs, one question. The `ticket` is the nonce ReferralCandy echoes back on the
+         * Three proofs, one question. The `ticket` is the nonce ReferralCandy echoes back on the
          * signup return leg — unguessable, pinned to one store, and proof the caller was part
          * of that handshake. The `statusToken` comes back with the first answer and is what
          * every later re-check uses, because the ticket dies with the handoff minutes later.
-         * Neither is a credential: they authorise this one question and nothing else.
+         * The `keyProofs` are HMACs over the wc-auth key(s) WooCommerce minted for ReferralCandy
+         * (see `key_proofs()`), used when neither ticket nor token exists — a connection made
+         * from the ReferralCandy side never sees a return leg. None of the three is a
+         * credential: they authorise this one question and nothing else.
          *
-         * @param array  $proof     ['ticket' => string] or ['statusToken' => string].
+         * @param array  $proof     ['ticket' => string], ['statusToken' => string], or ['keyProofs' => array].
          * @param string $store_url This store's own URL.
          *
          * @return array Always has 'outcome': 'ok' with the answer, 'unreachable' when
@@ -215,6 +226,74 @@ if (!class_exists('RC_Api')) {
                     ? $result['body']['campaigns']
                     : null,
             ];
+        }
+
+        /**
+         * Proofs that this store holds the wc-auth key(s) WooCommerce minted for ReferralCandy.
+         *
+         * A store connected from the ReferralCandy side never sees the return leg that carries a
+         * ticket or token, so the shared consumer secret is all the plugin has to prove itself
+         * with. The secret is never sent — only an HMAC over the domain tag, store URL, truncated
+         * key and timestamp. All ReferralCandy rows are offered, newest first: rc-main kept one,
+         * and not necessarily the newest, since an abandoned approval mints a row it never got.
+         *
+         * @return array Each entry ['truncatedKey' => string, 'timestamp' => int, 'signature' => string];
+         *               empty when the store holds no such key.
+         */
+        public static function key_proofs($store_url)
+        {
+            global $wpdb;
+
+            // Unusable rows are excluded here, not after the limit: five newer rows that cannot be
+            // signed with would otherwise hide the older key rc-main actually kept, and the store
+            // would read as not connected. The exact hex shape is still checked in PHP, because
+            // the column's collation decides whether SQL would treat A-F as a match.
+            $rows = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT truncated_key, consumer_secret FROM {$wpdb->prefix}woocommerce_api_keys
+                     WHERE description LIKE %s AND consumer_secret <> ''
+                       AND CHAR_LENGTH(truncated_key) = 7
+                     ORDER BY key_id DESC LIMIT %d",
+                    $wpdb->esc_like('ReferralCandy') . '%',
+                    self::KEY_PROOF_SCAN
+                ),
+                ARRAY_A
+            );
+
+            if (!is_array($rows) || $rows === []) {
+                return [];
+            }
+
+            // One clock reading for the batch, so rc-main sees one instant per request.
+            $timestamp = time();
+            $proofs = [];
+
+            foreach ($rows as $row) {
+                $truncated_key = (string) $row['truncated_key'];
+                $secret = (string) $row['consumer_secret'];
+                // rc-main refuses the whole batch over one malformed entry, so drop the row
+                // rather than the batch.
+                if (!preg_match('/^[0-9a-f]{7}$/', $truncated_key) || $secret === '') {
+                    continue;
+                }
+
+                if (count($proofs) === self::KEY_PROOF_MAX) {
+                    break;
+                }
+
+                $proofs[] = [
+                    'truncatedKey' => $truncated_key,
+                    'timestamp'    => $timestamp,
+                    // Signed over the URL exactly as sent; rc-main verifies those bytes.
+                    'signature'    => hash_hmac(
+                        'sha256',
+                        self::KEY_PROOF_DOMAIN . "\n" . $store_url . "\n" . $truncated_key . "\n" . $timestamp,
+                        $secret
+                    ),
+                ];
+            }
+
+            return $proofs;
         }
 
         /**

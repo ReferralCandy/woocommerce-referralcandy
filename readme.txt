@@ -4,7 +4,7 @@ Contributors: referralcandy
 Tags: referral program, customer referral program, referral software, refer-a-friend, affiliate program, referral, word-of-mouth, referral marketing, affiliate, affiliate marketing, affiliate manager, woo commerce
 Requires at least: 6.4
 Requires PHP: 7.4
-Tested up to: 6.9.1
+Tested up to: 7.1
 Stable tag: trunk
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -87,6 +87,11 @@ We maintain a list of FAQs on our [help page](https://help.referralcandy.com/)!
 1. ReferralCandy for WooCommerce Plugin Settings Page
 
 == Changelog ==
+
+= 3.0.1 =
+* A store connected from the ReferralCandy dashboard now recognises itself, instead of asking you to confirm a connection you had already made
+* The ReferralCandy logomark replaces the generic megaphone in the WordPress menu
+* Tested up to WordPress 7.1
 
 = 3.0.0 =
 * Connect your store in one click: approve ReferralCandy in WooCommerce and your account is created and linked, with no API keys to copy anywhere

@@ -6,11 +6,11 @@
  * Author: ReferralCandy
  * Author URI: http://www.referralcandy.com
  * Text Domain: woocommerce-referralcandy
- * Version: 3.0.0
+ * Version: 3.0.1
  * Requires at least: 6.4
  * Requires PHP: 7.4
  * Requires Plugins: woocommerce
- * Tested up to: 6.9.1
+ * Tested up to: 7.1
  * WC requires at least: 9.0.1
  * WC tested up to: 10.9
  *
@@ -37,9 +37,11 @@ if (!defined('ABSPATH')) {
 // path, field ids) derives from them.
 define('WC_REFERRALCANDY_SUFFIX', '');
 define('WC_REFERRALCANDY_LABEL', 'ReferralCandy');
-define('WC_REFERRALCANDY_API_BASE', 'https://my.referralcandy.com/api/v1');
-define('WC_REFERRALCANDY_MAIN_API_BASE', 'https://mainapi.referralcandy.com/v1');
-define('WC_REFERRALCANDY_APP_BASE', 'https://my.referralcandy.com');
+// Guarded so wp-config can point a local install at a development rc-main; it loads first, and a
+// plain define() would keep its value but warn on every request.
+defined('WC_REFERRALCANDY_API_BASE') || define('WC_REFERRALCANDY_API_BASE', 'https://my.referralcandy.com/api/v1');
+defined('WC_REFERRALCANDY_MAIN_API_BASE') || define('WC_REFERRALCANDY_MAIN_API_BASE', 'https://mainapi.referralcandy.com/v1');
+defined('WC_REFERRALCANDY_APP_BASE') || define('WC_REFERRALCANDY_APP_BASE', 'https://my.referralcandy.com');
 
 define('WC_REFERRALCANDY_PLUGIN_FILE', __FILE__);
 define('WC_REFERRALCANDY_MIN_WC', '9.0.1');

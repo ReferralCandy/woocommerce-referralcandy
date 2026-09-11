@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-08-31T06:44:43+00:00\n"
+"POT-Creation-Date: 2026-09-11T09:09:40+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: woocommerce-referralcandy\n"
@@ -39,64 +39,64 @@ msgstr ""
 msgid "http://www.referralcandy.com"
 msgstr ""
 
-#: includes/class-rc-admin.php:95
+#: includes/class-rc-admin.php:98
 #: src/app.js:434
 #: src/pages/overview.js:170
 #: src/shell.js:214
 msgid "Overview"
 msgstr ""
 
-#: includes/class-rc-admin.php:97
+#: includes/class-rc-admin.php:100
 #: src/shell.js:175
 #: src/shell.js:223
 msgid "Settings"
 msgstr ""
 
-#: includes/class-rc-admin.php:98
+#: includes/class-rc-admin.php:101
 #: src/app.js:431
 #: src/pages/help.js:39
 #: src/shell.js:232
 msgid "Help"
 msgstr ""
 
-#: includes/class-rc-admin.php:126
+#: includes/class-rc-admin.php:129
 msgid "ReferralCandy: admin assets are missing. Run `pnpm run build` in the plugin directory."
 msgstr ""
 
-#: includes/class-rc-admin.php:364
+#: includes/class-rc-admin.php:367
 msgid "Request body must be a JSON object of settings."
 msgstr ""
 
-#: includes/class-rc-admin.php:614
+#: includes/class-rc-admin.php:640
 msgid "Your store must be served over HTTPS before it can be connected to ReferralCandy."
 msgstr ""
 
-#: includes/class-rc-admin.php:629
+#: includes/class-rc-admin.php:655
 msgid "Could not reach ReferralCandy. Check your connection and try again."
 msgstr ""
 
-#: includes/class-rc-admin.php:637
+#: includes/class-rc-admin.php:663
 msgid "ReferralCandy could not start the signup. Try again in a moment."
 msgstr ""
 
-#: includes/class-rc-admin.php:650
+#: includes/class-rc-admin.php:676
 msgid "ReferralCandy returned an unexpected address. Please try again."
 msgstr ""
 
-#: includes/class-rc-admin.php:680
+#: includes/class-rc-admin.php:706
 msgid "A signup ticket is required."
 msgstr ""
 
-#: includes/class-rc-api.php:41
+#: includes/class-rc-api.php:49
 msgid "API keys are not set."
 msgstr ""
 
-#: includes/class-rc-api.php:243
+#: includes/class-rc-api.php:322
 msgid "API keys verified."
 msgstr ""
 
 #. translators: %d: HTTP status code
-#: includes/class-rc-api.php:247
+#: includes/class-rc-api.php:326
 #, php-format
 msgid "ReferralCandy responded with HTTP %d."
 msgstr ""
@@ -151,7 +151,7 @@ msgstr ""
 
 #: includes/class-wc-referralcandy-integration.php:129
 #: src/groups.js:48
-msgid "Post-purchase Popup"
+msgid "Post-purchase popup"
 msgstr ""
 
 #: includes/class-wc-referralcandy-integration.php:130
@@ -163,7 +163,7 @@ msgid "Campaign"
 msgstr ""
 
 #: includes/class-wc-referralcandy-integration.php:142
-msgid "Post-purchase Popup Quickfix"
+msgid "Post-purchase popup quickfix"
 msgstr ""
 
 #: includes/class-wc-referralcandy-integration.php:143
@@ -235,7 +235,7 @@ msgid "Open settings"
 msgstr ""
 
 #. translators: 1: plugin label, 2: minimum WooCommerce version
-#: woocommerce-referralcandy.php:145
+#: woocommerce-referralcandy.php:147
 #, php-format
 msgid "%1$s <strong>requires</strong> WooCommerce %2$s or higher to be installed and activated."
 msgstr ""

@@ -126,7 +126,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                     'default' => 'I would like to receive referral marketing and promotional emails.'
                 ],
                 'popup' => [
-                    'title' => __('Post-purchase Popup', 'woocommerce-referralcandy'),
+                    'title' => __('Post-purchase popup', 'woocommerce-referralcandy'),
                     'label' => __('Enable at checkout', 'woocommerce-referralcandy'),
                     'type' => 'checkbox',
                     'desc_tip' => false,
@@ -139,7 +139,7 @@ if (!class_exists('WC_Referralcandy_Integration')) {
                     'class' => 'popup-campaign-key-field'
                 ], $this->campaign_field_shape()),
                 'popup_quickfix' => [
-                    'title' => __('Post-purchase Popup Quickfix', 'woocommerce-referralcandy'),
+                    'title' => __('Post-purchase popup quickfix', 'woocommerce-referralcandy'),
                     'label' => __(
                         'Is the post-purchase popup breaking the checkout page?
                         Try enabling this option to apply a quickfix.',

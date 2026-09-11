@@ -45,12 +45,25 @@ const mainSource = readFileSync( join( ROOT, MAIN ), 'utf8' );
  * One replacement per *_BASE define, value from the environment. Fails loudly if any is missing:
  * a staging zip that silently talks to production is the worst outcome.
  */
+const EXPECTED_BASE_DEFINES = 3;
+
 function stagingBaseReplacements() {
+	// Matches the guarded form the main file uses: `defined('X') || define('X', '...');`.
 	const defines = [
 		...mainSource.matchAll(
-			/^define\('WC_REFERRALCANDY_([A-Z_]+_BASE)', '[^']*'\);$/gm
+			/^defined\('WC_REFERRALCANDY_([A-Z_]+_BASE)'\) \|\| define\('WC_REFERRALCANDY_\1', '[^']*'\);$/gm
 		),
 	];
+
+	// No matches means nothing to declare missing and nothing for the zip check to verify, so a
+	// regex that stops matching would silently ship the production hosts. Count them instead.
+	if ( defines.length !== EXPECTED_BASE_DEFINES ) {
+		console.error(
+			`Expected ${ EXPECTED_BASE_DEFINES } *_BASE defines in ${ MAIN }, found ${ defines.length }. Did their shape change?`
+		);
+		process.exit( 1 );
+	}
+
 	const missing = [];
 	const pairs = [];
 
@@ -69,7 +82,7 @@ function stagingBaseReplacements() {
 		}
 		pairs.push( [
 			match[ 0 ],
-			`define('WC_REFERRALCANDY_${ match[ 1 ] }', '${ value }');`,
+			`defined('WC_REFERRALCANDY_${ match[ 1 ] }') || define('WC_REFERRALCANDY_${ match[ 1 ] }', '${ value }');`,
 		] );
 	}
 
@@ -86,7 +99,7 @@ function stagingBaseReplacements() {
 }
 
 // Files that ship. Keep in sync with .distignore (the WordPress.org deploy path).
-const SHIPPED = [ MAIN, 'readme.txt', 'uninstall.php', 'includes', 'build', 'languages' ];
+const SHIPPED = [ MAIN, 'readme.txt', 'uninstall.php', 'includes', 'images', 'build', 'languages' ];
 
 const FLAVORS = {
 	production: {
