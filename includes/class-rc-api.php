@@ -24,6 +24,12 @@ if (!class_exists('RC_Api')) {
         const STORE_EXISTS_TRANSIENT = 'wc_referralcandy_store_exists';
         const TIMEOUT = 10;
 
+        /** How many of the store's ReferralCandy keys one request offers. Mirrors rc-main's cap. */
+        const KEY_PROOF_MAX = 5;
+
+        /** Domain tag mixed into every key-proof HMAC. See `key_proofs()`. */
+        const KEY_PROOF_DOMAIN = 'rc-wc-key-proof:v1';
+
         /**
          * Signed request to the external API.
          *
@@ -158,13 +164,16 @@ if (!class_exists('RC_Api')) {
         /**
          * Asks ReferralCandy whether this store is connected through wc-auth.
          *
-         * Two proofs, one question. The `ticket` is the nonce ReferralCandy echoes back on the
+         * Three proofs, one question. The `ticket` is the nonce ReferralCandy echoes back on the
          * signup return leg — unguessable, pinned to one store, and proof the caller was part
          * of that handshake. The `statusToken` comes back with the first answer and is what
          * every later re-check uses, because the ticket dies with the handoff minutes later.
-         * Neither is a credential: they authorise this one question and nothing else.
+         * The `keyProofs` are HMACs over the wc-auth key(s) WooCommerce minted for ReferralCandy
+         * (see `key_proofs()`), used when neither ticket nor token exists — a connection made
+         * from the ReferralCandy side never sees a return leg. None of the three is a
+         * credential: they authorise this one question and nothing else.
          *
-         * @param array  $proof     ['ticket' => string] or ['statusToken' => string].
+         * @param array  $proof     ['ticket' => string], ['statusToken' => string], or ['keyProofs' => array].
          * @param string $store_url This store's own URL.
          *
          * @return array Always has 'outcome': 'ok' with the answer, 'unreachable' when
@@ -217,12 +226,6 @@ if (!class_exists('RC_Api')) {
             ];
         }
 
-        /** How many of the store's ReferralCandy keys one request offers. Mirrors rc-main's cap. */
-        const KEY_PROOF_MAX = 5;
-
-        /** Domain tag mixed into every key-proof HMAC. See `key_proofs()`. */
-        const KEY_PROOF_DOMAIN = 'rc-wc-key-proof:v1';
-
         /**
          * Proofs that this store holds the wc-auth key(s) WooCommerce minted for ReferralCandy.
          *
@@ -237,8 +240,8 @@ if (!class_exists('RC_Api')) {
          *
          * Every ReferralCandy-issued row is offered, newest first, because a store accrues one
          * per approval and rc-main kept only one of them — not necessarily the newest, since
-         * an abandoned approval mints a row rc-main never received. WooCommerce writes the
-         * description as "<app_name> - API (<date>)", and rc-main's app_name is ReferralCandy.
+         * an abandoned approval mints a row rc-main never received. WooCommerce's description
+         * starts with the app name (`<app_name> - API …`), and rc-main's app_name is ReferralCandy.
          *
          * @return array Each entry ['truncatedKey' => string, 'timestamp' => int, 'signature' => string];
          *               empty when the store holds no such key.
@@ -268,9 +271,11 @@ if (!class_exists('RC_Api')) {
             foreach ($rows as $row) {
                 $truncated_key = (string) $row['truncated_key'];
                 $secret = (string) $row['consumer_secret'];
-                // A row WooCommerce couldn't fully write, or one a merchant edited by hand,
-                // has nothing to sign with; skip it rather than let it stop the others.
-                if ($truncated_key === '' || $secret === '') {
+                // rc-main refuses the whole batch if any one entry's truncatedKey is not 7
+                // lowercase hex chars. A row WooCommerce could not fully write, or one edited
+                // by hand, would make rc-main refuse every proof in the batch, not just this
+                // one — skip it instead.
+                if (!preg_match('/^[0-9a-f]{7}$/', $truncated_key) || $secret === '') {
                     continue;
                 }
 
