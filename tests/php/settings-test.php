@@ -231,6 +231,75 @@ if ($restore_campaigns === null) {
 $integration->init_settings();
 $integration->init_form_fields();
 
+// ---- key proofs -------------------------------------------------------------------------
+//
+// A store connected from the ReferralCandy side holds no ticket and no token, only the wc-auth
+// key WooCommerce minted for ReferralCandy. RC_Api::key_proofs() turns that into something the
+// plugin can send without ever sending the secret. Seeded here with a known secret so the HMAC
+// can be recomputed; WooCommerce writes the description as "<app_name> - API (<date>)".
+
+global $wpdb;
+$keys_table = $wpdb->prefix . 'woocommerce_api_keys';
+$rc_test_store_url = 'https://shop.example';
+
+$seeded_key_ids = [];
+foreach ([
+    ['description' => 'Someone Else - API (2026-09-01 00:00:00)', 'truncated_key' => 'aaaaaaa', 'consumer_secret' => 'cs_other'],
+    ['description' => 'ReferralCandy - API (2026-09-08 07:35:03)', 'truncated_key' => 'eb26314', 'consumer_secret' => 'cs_older'],
+    ['description' => 'ReferralCandy - API (2026-09-10 01:50:42)', 'truncated_key' => '2094793', 'consumer_secret' => 'cs_newest'],
+] as $row) {
+    $wpdb->insert($keys_table, [
+        'user_id'         => 1,
+        'description'     => $row['description'],
+        'permissions'     => 'read_write',
+        'consumer_key'    => hash_hmac('sha256', 'ck_' . $row['truncated_key'], 'wc-api'),
+        'consumer_secret' => $row['consumer_secret'],
+        'truncated_key'   => $row['truncated_key'],
+    ]);
+    $seeded_key_ids[] = (int) $wpdb->insert_id;
+}
+
+$proofs = RC_Api::key_proofs($rc_test_store_url);
+
+rc_is(count($proofs), 2, 'only ReferralCandy-issued keys are offered');
+rc_is($proofs[0]['truncatedKey'], '2094793', 'newest key first');
+rc_is($proofs[1]['truncatedKey'], 'eb26314', 'older key second');
+rc_ok(is_int($proofs[0]['timestamp']) && abs(time() - $proofs[0]['timestamp']) < 5, 'timestamp is now, in seconds');
+rc_is($proofs[0]['timestamp'], $proofs[1]['timestamp'], 'one timestamp per batch');
+rc_is(
+    $proofs[0]['signature'],
+    hash_hmac('sha256', $rc_test_store_url . "\n2094793\n" . $proofs[0]['timestamp'], 'cs_newest'),
+    'signature is HMAC-SHA256 over storeUrl, truncated key and timestamp with the consumer secret'
+);
+rc_ok(strpos(wp_json_encode($proofs), 'cs_newest') === false, 'the secret never appears in a proof');
+foreach ($proofs as $proof) {
+    rc_is(array_keys($proof), ['truncatedKey', 'timestamp', 'signature'], 'a proof carries exactly three fields');
+}
+
+// Six ReferralCandy rows: the cap holds.
+$extra_key_ids = [];
+for ($i = 0; $i < 4; $i++) {
+    $wpdb->insert($keys_table, [
+        'user_id'         => 1,
+        'description'     => 'ReferralCandy - API (2026-09-11 00:00:0' . $i . ')',
+        'permissions'     => 'read_write',
+        'consumer_key'    => hash_hmac('sha256', 'ck_extra' . $i, 'wc-api'),
+        'consumer_secret' => 'cs_extra' . $i,
+        'truncated_key'   => 'extra0' . $i,
+    ]);
+    $extra_key_ids[] = (int) $wpdb->insert_id;
+}
+rc_is(count(RC_Api::key_proofs($rc_test_store_url)), 5, 'at most five keys are offered');
+
+foreach (array_merge($seeded_key_ids, $extra_key_ids) as $key_id) {
+    $wpdb->delete($keys_table, ['key_id' => $key_id]);
+}
+
+$before_count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$keys_table} WHERE description LIKE 'ReferralCandy%'");
+if ($before_count === 0) {
+    rc_is(RC_Api::key_proofs($rc_test_store_url), [], 'a store with no ReferralCandy key offers nothing');
+}
+
 // ---- report -----------------------------------------------------------------------------
 
 $passes = $GLOBALS['rc_test']['passes'];
