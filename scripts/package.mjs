@@ -48,18 +48,15 @@ const mainSource = readFileSync( join( ROOT, MAIN ), 'utf8' );
 const EXPECTED_BASE_DEFINES = 3;
 
 function stagingBaseReplacements() {
-	// Matches the guarded form the main file uses: `defined('X') || define('X', '...');`. The
-	// guard lets a local wp-config point the plugin at a development rc-main.
+	// Matches the guarded form the main file uses: `defined('X') || define('X', '...');`.
 	const defines = [
 		...mainSource.matchAll(
 			/^defined\('WC_REFERRALCANDY_([A-Z_]+_BASE)'\) \|\| define\('WC_REFERRALCANDY_\1', '[^']*'\);$/gm
 		),
 	];
 
-	// A regex that stops matching is the one failure this function cannot report as "missing":
-	// with no matches there is nothing to declare missing, no replacement is generated, and the
-	// zip check below has nothing to verify — so the staging build would quietly ship the
-	// production hosts. Count them instead.
+	// No matches means nothing to declare missing and nothing for the zip check to verify, so a
+	// regex that stops matching would silently ship the production hosts. Count them instead.
 	if ( defines.length !== EXPECTED_BASE_DEFINES ) {
 		console.error(
 			`Expected ${ EXPECTED_BASE_DEFINES } *_BASE defines in ${ MAIN }, found ${ defines.length }. Did their shape change?`

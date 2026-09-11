@@ -518,14 +518,14 @@ if (!class_exists('RC_Admin')) {
          * — an outage must never throw a working merchant back into the setup wizard — and is
          * retried sooner than a real answer would be.
          *
-         * A store with no token asks with key proofs instead (`RC_Api::key_proofs()`), which is
-         * how a connection made from the ReferralCandy dashboard reaches this plugin at all.
+         * With no token it asks with `RC_Api::key_proofs()` instead — the only way a connection
+         * made from the ReferralCandy dashboard reaches this plugin.
          */
         /** @return bool True when ReferralCandy answered; false when it could not be asked. */
         private function refresh_platform_connection()
         {
-            // Checked before anything else: a token-less store would otherwise query
-            // woocommerce_api_keys on every call this interval was already going to stop.
+            // First: a token-less store would otherwise query woocommerce_api_keys on every
+            // call the interval was going to stop anyway.
             if (get_transient(self::PLATFORM_CHECKED_TRANSIENT)) {
                 return false;
             }
@@ -536,10 +536,8 @@ if (!class_exists('RC_Admin')) {
             $token = (string) get_option(self::PLATFORM_TOKEN_OPTION, '');
             $store_url = $this->store_url();
 
-            // No token means this plugin never saw a return leg: the store was connected from
-            // the ReferralCandy side, or installed onto an already-connected store. It can still
-            // prove itself with the wc-auth key WooCommerce minted for ReferralCandy — and a
-            // store with no such key has never been connected, so there is nothing to ask.
+            // No token means no return leg was ever seen — connected from the ReferralCandy
+            // side. The wc-auth key proves the store instead; no such key means never connected.
             $proof = $token !== ''
                 ? ['statusToken' => $token]
                 : ['keyProofs' => RC_Api::key_proofs($store_url)];
@@ -563,11 +561,8 @@ if (!class_exists('RC_Admin')) {
                 delete_option(self::PLATFORM_CONNECTED_OPTION);
 
                 if ($status['reason'] === 'setup_incomplete') {
-                    // The store is still linked; its owner simply has not finished choosing a
-                    // plan. Keep the token so finishing it is noticed here without making them
-                    // approve access all over again, and look again sooner than usual.
-                    // Issued alongside the "not yet" answer. A key-proof store has no token yet;
-                    // keeping this one lets it graduate to the ordinary token re-check.
+                    // Still linked, just unpaid. Keep the issued token so finishing is noticed
+                    // without another approval — and so a key-proof store graduates to it.
                     if (!empty($status['statusToken'])) {
                         update_option(self::PLATFORM_TOKEN_OPTION, $status['statusToken'], false);
                     }
@@ -581,9 +576,8 @@ if (!class_exists('RC_Admin')) {
                 delete_option(self::PLATFORM_TOKEN_OPTION);
                 delete_option(self::PLATFORM_CAMPAIGNS_OPTION);
 
-                // A store that had a token is stopped from asking again by losing it. A token-less
-                // store has nothing to lose — its key rows stay in WooCommerce — so the interval is
-                // what bounds it; the Refresh button's forced path still clears this.
+                // Losing the token is what stops a token store asking again; a token-less one
+                // keeps its key rows, so only the interval bounds it. Forced refresh clears it.
                 if ($token === '') {
                     set_transient(self::PLATFORM_CHECKED_TRANSIENT, 1, 5 * MINUTE_IN_SECONDS);
                 } else {

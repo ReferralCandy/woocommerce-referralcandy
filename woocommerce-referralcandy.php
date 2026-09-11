@@ -37,11 +37,8 @@ if (!defined('ABSPATH')) {
 // path, field ids) derives from them.
 define('WC_REFERRALCANDY_SUFFIX', '');
 define('WC_REFERRALCANDY_LABEL', 'ReferralCandy');
-// The three hosts are guarded rather than plain defines so a local install can point them at a
-// development rc-main from wp-config (wp-env's `config` block, i.e. .wp-env.override.json) without
-// editing a tracked file. wp-config loads first, so its value wins; an unguarded define() would
-// keep it but warn on every request. Only the guard is new — the literals below stay the
-// production hosts, and scripts/package.mjs still rewrites these lines for the staging zip.
+// Guarded so wp-config can point a local install at a development rc-main; it loads first, and a
+// plain define() would keep its value but warn on every request.
 defined('WC_REFERRALCANDY_API_BASE') || define('WC_REFERRALCANDY_API_BASE', 'https://my.referralcandy.com/api/v1');
 defined('WC_REFERRALCANDY_MAIN_API_BASE') || define('WC_REFERRALCANDY_MAIN_API_BASE', 'https://mainapi.referralcandy.com/v1');
 defined('WC_REFERRALCANDY_APP_BASE') || define('WC_REFERRALCANDY_APP_BASE', 'https://my.referralcandy.com');

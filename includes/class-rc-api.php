@@ -229,19 +229,11 @@ if (!class_exists('RC_Api')) {
         /**
          * Proofs that this store holds the wc-auth key(s) WooCommerce minted for ReferralCandy.
          *
-         * A store whose connection was made from the ReferralCandy side — a signup that started
-         * at referralcandy.com, or a legacy merchant connecting from the dashboard — never sees
-         * the return leg that carries a ticket or token, so the plugin has nothing to ask with.
-         * It does hold the consumer secret WooCommerce handed ReferralCandy at approval. The
-         * secret is never sent: each proof is an HMAC over a domain tag, the store URL, the
-         * key's truncated id and the current time, which only a holder of the same secret can
-         * check. The tag keeps this HMAC from being confused with anything else the same secret
-         * might ever sign, and the version in it lets the layout change later without a flag day.
-         *
-         * Every ReferralCandy-issued row is offered, newest first, because a store accrues one
-         * per approval and rc-main kept only one of them — not necessarily the newest, since
-         * an abandoned approval mints a row rc-main never received. WooCommerce's description
-         * starts with the app name (`<app_name> - API …`), and rc-main's app_name is ReferralCandy.
+         * A store connected from the ReferralCandy side never sees the return leg that carries a
+         * ticket or token, so the shared consumer secret is all the plugin has to prove itself
+         * with. The secret is never sent — only an HMAC over the domain tag, store URL, truncated
+         * key and timestamp. All ReferralCandy rows are offered, newest first: rc-main kept one,
+         * and not necessarily the newest, since an abandoned approval mints a row it never got.
          *
          * @return array Each entry ['truncatedKey' => string, 'timestamp' => int, 'signature' => string];
          *               empty when the store holds no such key.
@@ -271,10 +263,8 @@ if (!class_exists('RC_Api')) {
             foreach ($rows as $row) {
                 $truncated_key = (string) $row['truncated_key'];
                 $secret = (string) $row['consumer_secret'];
-                // rc-main refuses the whole batch if any one entry's truncatedKey is not 7
-                // lowercase hex chars. A row WooCommerce could not fully write, or one edited
-                // by hand, would make rc-main refuse every proof in the batch, not just this
-                // one — skip it instead.
+                // rc-main refuses the whole batch over one malformed entry, so drop the row
+                // rather than the batch.
                 if (!preg_match('/^[0-9a-f]{7}$/', $truncated_key) || $secret === '') {
                     continue;
                 }
@@ -282,8 +272,7 @@ if (!class_exists('RC_Api')) {
                 $proofs[] = [
                     'truncatedKey' => $truncated_key,
                     'timestamp'    => $timestamp,
-                    // Signed over the URL exactly as it will be sent: rc-main verifies the same
-                    // bytes before it normalizes anything.
+                    // Signed over the URL exactly as sent; rc-main verifies those bytes.
                     'signature'    => hash_hmac(
                         'sha256',
                         self::KEY_PROOF_DOMAIN . "\n" . $store_url . "\n" . $truncated_key . "\n" . $timestamp,
