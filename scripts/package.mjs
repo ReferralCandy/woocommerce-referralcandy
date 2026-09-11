@@ -99,7 +99,7 @@ function stagingBaseReplacements() {
 }
 
 // Files that ship. Keep in sync with .distignore (the WordPress.org deploy path).
-const SHIPPED = [ MAIN, 'readme.txt', 'uninstall.php', 'includes', 'build', 'languages' ];
+const SHIPPED = [ MAIN, 'readme.txt', 'uninstall.php', 'includes', 'images', 'build', 'languages' ];
 
 const FLAVORS = {
 	production: {

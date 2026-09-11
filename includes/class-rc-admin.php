@@ -87,7 +87,10 @@ if (!class_exists('RC_Admin')) {
                 self::CAPABILITY,
                 WC_REFERRALCANDY_SLUG,
                 [$this, 'render_page'],
-                'dashicons-megaphone',
+                // Core renders an icon URL as an <img> with no size of its own, so the file
+                // carries width/height 20. The brand's black-and-white logomark, not the colour
+                // one: core only dims the icon (60%, full when active) and never recolours it.
+                plugins_url('images/menu-icon.svg', WC_REFERRALCANDY_PLUGIN_FILE),
                 56
             );
 
