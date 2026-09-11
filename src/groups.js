@@ -45,7 +45,7 @@ export const GROUPS = [
 	},
 	{
 		key: 'popup',
-		title: __( 'Post-purchase Popup', 'woocommerce-referralcandy' ),
+		title: __( 'Post-purchase popup', 'woocommerce-referralcandy' ),
 		description: __(
 			'Show the ReferralCandy popup on the thank-you page.',
 			'woocommerce-referralcandy'
