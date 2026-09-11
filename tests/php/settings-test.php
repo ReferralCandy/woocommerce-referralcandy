@@ -261,13 +261,26 @@ register_shutdown_function(function () {
         $wpdb->delete($state['table'], ['key_id' => $key_id]);
     }
     foreach ($state['held'] as $key_id) {
+        // The LIKE guard makes this safe even against a killed earlier run: it only unwraps a
+        // row that is actually still held, rather than assuming this run is the one that held it.
         $wpdb->query($wpdb->prepare(
-            "UPDATE {$state['table']} SET description = SUBSTRING(description, %d) WHERE key_id = %d",
+            "UPDATE {$state['table']} SET description = SUBSTRING(description, %d)
+             WHERE key_id = %d AND description LIKE %s",
             strlen('rc-test-held:') + 1,
-            $key_id
+            $key_id,
+            $wpdb->esc_like('rc-test-held:') . '%'
         ));
     }
 });
+
+// Idempotent un-hold for rows a killed earlier run left behind: a SIGKILLed run leaves real
+// rows hidden behind the `rc-test-held:` prefix, invisible to key_proofs(). This puts them back
+// before anything else, so this run starts from the same state a clean run would.
+$wpdb->query($wpdb->prepare(
+    "UPDATE {$keys_table} SET description = SUBSTRING(description, %d) WHERE description LIKE %s",
+    strlen('rc-test-held:') + 1,
+    $wpdb->esc_like('rc-test-held:') . '%'
+));
 
 $held_key_ids = $wpdb->get_col($wpdb->prepare(
     "SELECT key_id FROM {$keys_table} WHERE description LIKE %s",
@@ -287,6 +300,11 @@ foreach ([
     ['description' => 'Someone Else - API (2026-09-01 00:00:00)', 'truncated_key' => 'aaaaaaa', 'consumer_secret' => 'cs_other'],
     ['description' => 'ReferralCandy - API (2026-09-08 07:35:03)', 'truncated_key' => 'eb26314', 'consumer_secret' => 'cs_older'],
     ['description' => 'ReferralCandy - API (2026-09-10 01:50:42)', 'truncated_key' => '2094793', 'consumer_secret' => 'cs_newest'],
+    // Contains, not prefix: not an RC key row at all, so the SQL filter must exclude it.
+    ['description' => 'My ReferralCandy - API (2026-09-09 00:00:00)', 'truncated_key' => 'bbbbbbb', 'consumer_secret' => 'cs_contains'],
+    // A blank secret cannot be signed with, so key_proofs() must skip it even though the
+    // description and truncated key are otherwise well-formed.
+    ['description' => 'ReferralCandy - API (2026-09-09 12:00:00)', 'truncated_key' => 'ccccccc', 'consumer_secret' => ''],
 ] as $row) {
     $wpdb->insert($keys_table, [
         'user_id'         => 1,
@@ -304,6 +322,8 @@ $proofs = RC_Api::key_proofs($rc_test_store_url);
 rc_is(count($proofs), 2, 'only ReferralCandy-issued keys are offered');
 rc_is($proofs[0]['truncatedKey'], '2094793', 'newest key first');
 rc_is($proofs[1]['truncatedKey'], 'eb26314', 'older key second');
+rc_ok(!in_array('bbbbbbb', array_column($proofs, 'truncatedKey'), true), 'a description that merely contains ReferralCandy is not an RC key');
+rc_ok(!in_array('ccccccc', array_column($proofs, 'truncatedKey'), true), 'a row with no secret cannot be signed with');
 rc_ok(is_int($proofs[0]['timestamp']) && abs(time() - $proofs[0]['timestamp']) < 5, 'timestamp is now, in seconds');
 rc_is($proofs[0]['timestamp'], $proofs[1]['timestamp'], 'one timestamp per batch');
 rc_is(
@@ -320,7 +340,14 @@ foreach ($proofs as $proof) {
     rc_is(array_keys($proof), ['truncatedKey', 'timestamp', 'signature'], 'a proof carries exactly three fields');
 }
 
-// Six ReferralCandy rows: the cap holds.
+// The excluded-row fixtures have done their job; gone before the cap test below, so a row that
+// merely occupies the newest-5 window without ever being a valid proof cannot squeeze a genuine
+// one out of it.
+$wpdb->delete($keys_table, ['truncated_key' => 'bbbbbbb']);
+$wpdb->delete($keys_table, ['truncated_key' => 'ccccccc']);
+
+// Six ReferralCandy rows: the cap holds. truncated_key must be 7 lowercase hex chars — the
+// shape key_proofs() now requires — or these rows would be pre-filtered out instead of capped.
 for ($i = 0; $i < 4; $i++) {
     $wpdb->insert($keys_table, [
         'user_id'         => 1,
@@ -328,7 +355,7 @@ for ($i = 0; $i < 4; $i++) {
         'permissions'     => 'read_write',
         'consumer_key'    => hash_hmac('sha256', 'ck_extra' . $i, 'wc-api'),
         'consumer_secret' => 'cs_extra' . $i,
-        'truncated_key'   => 'extra0' . $i,
+        'truncated_key'   => sprintf('fab000%d', $i),
     ]);
     $GLOBALS['rc_test_key_cleanup']['seeded'][] = (int) $wpdb->insert_id;
 }
