@@ -220,6 +220,9 @@ if (!class_exists('RC_Api')) {
         /** How many of the store's ReferralCandy keys one request offers. Mirrors rc-main's cap. */
         const KEY_PROOF_MAX = 5;
 
+        /** Domain tag mixed into every key-proof HMAC. See `key_proofs()`. */
+        const KEY_PROOF_DOMAIN = 'rc-wc-key-proof:v1';
+
         /**
          * Proofs that this store holds the wc-auth key(s) WooCommerce minted for ReferralCandy.
          *
@@ -227,8 +230,10 @@ if (!class_exists('RC_Api')) {
          * at referralcandy.com, or a legacy merchant connecting from the dashboard — never sees
          * the return leg that carries a ticket or token, so the plugin has nothing to ask with.
          * It does hold the consumer secret WooCommerce handed ReferralCandy at approval. The
-         * secret is never sent: each proof is an HMAC over the store URL, the key's truncated
-         * id and the current time, which only a holder of the same secret can check.
+         * secret is never sent: each proof is an HMAC over a domain tag, the store URL, the
+         * key's truncated id and the current time, which only a holder of the same secret can
+         * check. The tag keeps this HMAC from being confused with anything else the same secret
+         * might ever sign, and the version in it lets the layout change later without a flag day.
          *
          * Every ReferralCandy-issued row is offered, newest first, because a store accrues one
          * per approval and rc-main kept only one of them — not necessarily the newest, since
@@ -274,7 +279,11 @@ if (!class_exists('RC_Api')) {
                     'timestamp'    => $timestamp,
                     // Signed over the URL exactly as it will be sent: rc-main verifies the same
                     // bytes before it normalizes anything.
-                    'signature'    => hash_hmac('sha256', $store_url . "\n" . $truncated_key . "\n" . $timestamp, $secret),
+                    'signature'    => hash_hmac(
+                        'sha256',
+                        self::KEY_PROOF_DOMAIN . "\n" . $store_url . "\n" . $truncated_key . "\n" . $timestamp,
+                        $secret
+                    ),
                 ];
             }
 

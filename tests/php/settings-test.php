@@ -308,8 +308,12 @@ rc_ok(is_int($proofs[0]['timestamp']) && abs(time() - $proofs[0]['timestamp']) <
 rc_is($proofs[0]['timestamp'], $proofs[1]['timestamp'], 'one timestamp per batch');
 rc_is(
     $proofs[0]['signature'],
-    hash_hmac('sha256', $rc_test_store_url . "\n2094793\n" . $proofs[0]['timestamp'], 'cs_newest'),
-    'signature is HMAC-SHA256 over storeUrl, truncated key and timestamp with the consumer secret'
+    hash_hmac(
+        'sha256',
+        RC_Api::KEY_PROOF_DOMAIN . "\n" . $rc_test_store_url . "\n2094793\n" . $proofs[0]['timestamp'],
+        'cs_newest'
+    ),
+    'signature is HMAC-SHA256 over the domain tag, storeUrl, truncated key and timestamp with the consumer secret'
 );
 rc_ok(strpos(wp_json_encode($proofs), 'cs_newest') === false, 'the secret never appears in a proof');
 foreach ($proofs as $proof) {
