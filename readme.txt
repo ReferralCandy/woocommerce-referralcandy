@@ -92,7 +92,7 @@ We maintain a list of FAQs on our [help page](https://help.referralcandy.com/)!
 == Changelog ==
 
 = 3.0.2 =
-* Installation instructions now describe connecting your store through WooCommerce instead of copying API keys
+* Update installation instructions
 
 = 3.0.1 =
 * A store connected from the ReferralCandy dashboard now recognises itself, instead of asking you to confirm a connection you had already made
