@@ -6,7 +6,7 @@
  * Author: ReferralCandy
  * Author URI: http://www.referralcandy.com
  * Text Domain: woocommerce-referralcandy
- * Version: 3.0.1
+ * Version: 3.0.2
  * Requires at least: 6.4
  * Requires PHP: 7.4
  * Requires Plugins: woocommerce
