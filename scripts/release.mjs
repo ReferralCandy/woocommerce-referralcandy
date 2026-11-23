@@ -1,21 +1,12 @@
 #!/usr/bin/env node
-/**
- * Prepares a release: bumps the version everywhere it is written, commits, and creates the vX.Y.Z
- * tag that .github/workflows/deploy.yml listens for.
- *
- * Usage: pnpm run release 3.0.2 [--tested 7.1]
- *
- * The changelog entry stays hand-written — this only refuses to continue when it is missing.
- */
-
 import { execFileSync } from 'node:child_process';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-	VERSIONED_FILES,
+	VERSIONED_REPO_PATHS,
 	changelogHas,
-	problems,
+	releaseProblems,
 	readVersions,
 	versionFromTag,
 	writeTested,
@@ -53,17 +44,12 @@ function parseArgs( argv ) {
 	return { version: versionFromTag( rest[ 0 ] ), tested };
 }
 
-/**
- * A release commit should carry the version bump and nothing else, so refuse when unrelated work
- * is staged or modified. The readme is expected to be dirty — that is where the changelog entry
- * was just written.
- */
 function assertNothingUnrelatedPending() {
 	const pending = git( 'status', '--porcelain' )
 		.split( '\n' )
 		.filter( Boolean )
 		.map( ( line ) => line.slice( 3 ).trim() )
-		.filter( ( path ) => ! VERSIONED_FILES.includes( path ) );
+		.filter( ( path ) => ! VERSIONED_REPO_PATHS.includes( path ) );
 
 	if ( pending.length ) {
 		fail(
@@ -89,7 +75,6 @@ function main( argv ) {
 
 	assertNothingUnrelatedPending();
 
-	// Checked before anything is written, so a missing changelog leaves the tree untouched.
 	if ( ! changelogHas( version ) ) {
 		fail(
 			`readme.txt has no "= ${ version } =" changelog entry.\nWrite the entry under == Changelog ==, then run this again.`
@@ -104,13 +89,13 @@ function main( argv ) {
 		writeTested( tested );
 	}
 
-	const remaining = problems( version );
+	const remaining = releaseProblems( version );
 
 	if ( remaining.length ) {
 		fail( `the tree is still inconsistent after the bump:\n  ${ remaining.join( '\n  ' ) }` );
 	}
 
-	git( 'add', '--', ...VERSIONED_FILES );
+	git( 'add', '--', ...VERSIONED_REPO_PATHS );
 
 	if ( ! git( 'diff', '--cached', '--name-only' ).trim() ) {
 		fail( `nothing to commit — the tree already reads ${ version }` );
