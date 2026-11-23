@@ -1,9 +1,20 @@
 name: Deploy to WordPress.org
 
 on:
+  # Only well-formed release tags publish. A tag in any other shape (3.0.2, v.3.0.2, a scratch tag)
+  # now does nothing at all, rather than shipping whatever it points at to every store.
   push:
     tags:
-      - '*'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+  # Rehearsal. Runs the whole pipeline against an existing tag — guard, tests, build, SVN checkout
+  # and file filtering — but passes dry-run to the deploy action, so nothing is committed to
+  # WordPress.org. Use this to prove a change to this workflow before trusting it with a release.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to rehearse, e.g. v3.0.1'
+        required: true
 
 jobs:
   deploy:
@@ -12,6 +23,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
 
       - uses: pnpm/action-setup@v4
 
@@ -23,14 +36,27 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # readme.txt's Stable tag is what WordPress.org actually serves, so a version that disagrees
+      # with the tag either ships the wrong code or ships nothing. Fail before the build, not after.
+      - name: Verify the version agrees everywhere
+        env:
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: node scripts/version.mjs verify "$RELEASE_TAG"
+
+      - name: Run tests
+        run: pnpm test
+
       - name: Build admin assets
         run: pnpm run build
 
       - name: Assert build output
         run: test -f build/index.js && test -f build/index.asset.php
 
+      # Pinned to a commit: this action carries the SVN credentials, and @stable moves.
       - name: Deploy to WordPress.org Plugin Directory
-        uses: 10up/action-wordpress-plugin-deploy@stable
+        uses: 10up/action-wordpress-plugin-deploy@54bd289b8525fd23a5c365ec369185f2966529c2 # 2.3.0
+        with:
+          dry-run: ${{ github.event_name == 'workflow_dispatch' }}
         env:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
