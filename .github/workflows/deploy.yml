@@ -3,7 +3,13 @@ name: Deploy to WordPress.org
 on:
   push:
     tags:
-      - '*'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to rehearse, e.g. v3.0.1'
+        required: true
 
 jobs:
   deploy:
@@ -12,6 +18,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
 
       - uses: pnpm/action-setup@v4
 
@@ -23,6 +31,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # readme.txt's Stable tag is what WordPress.org actually serves, so a version that disagrees
+      # with the tag either ships the wrong code or ships nothing.
+      - name: Verify the version agrees everywhere
+        env:
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: node scripts/version.mjs verify "$RELEASE_TAG"
+
+      - name: Run tests
+        run: pnpm test
+
       - name: Build admin assets
         run: pnpm run build
 
@@ -30,7 +48,9 @@ jobs:
         run: test -f build/index.js && test -f build/index.asset.php
 
       - name: Deploy to WordPress.org Plugin Directory
-        uses: 10up/action-wordpress-plugin-deploy@stable
+        uses: 10up/action-wordpress-plugin-deploy@54bd289b8525fd23a5c365ec369185f2966529c2 # 2.3.0
+        with:
+          dry-run: ${{ github.event_name == 'workflow_dispatch' }}
         env:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}

@@ -1,6 +1,6 @@
 {
     "name": "woocommerce-referralcandy",
-    "version": "3.0.0",
+    "version": "3.0.1",
     "private": true,
     "packageManager": "pnpm@11.24.0",
     "scripts": {
@@ -12,6 +12,7 @@
         "i18n": "wp-env run cli wp i18n make-pot wp-content/plugins/woocommerce-referralcandy /tmp/rc.pot --domain=woocommerce-referralcandy --exclude=build,node_modules,dev,scripts,tests,dist --package-name=\"ReferralCandy for WooCommerce\" && wp-env run cli cat /tmp/rc.pot > languages/woocommerce-referralcandy.pot",
         "zip": "wp-scripts build && node scripts/package.mjs production",
         "zip:staging": "wp-scripts build && node scripts/package.mjs staging",
+        "release": "node scripts/release.mjs",
         "start": "wp-env start",
         "start:xdebug": "wp-env start --xdebug",
         "tunnel": "node scripts/tunnel.mjs",

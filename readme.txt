@@ -5,7 +5,7 @@ Tags: referral program, customer referral program, referral software, refer-a-fr
 Requires at least: 6.4
 Requires PHP: 7.4
 Tested up to: 7.1
-Stable tag: trunk
+Stable tag: 3.0.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,19 +64,22 @@ https://www.youtube.com/watch?v=arlElJkyGwc
 
 == Installation ==
 
-**Requires WooCommerce 9.0.1 or higher**
+The plugin requires WooCommerce 9.0.1 or higher, and the store must use HTTPS.
 
-Welcome to ReferralCandy! Get started with our easy integration process:
+1. Install and activate the plugin.
+2. In the WordPress admin menu, open ReferralCandy.
+3. Click "Create account & connect store". In WooCommerce, approve access for ReferralCandy. Then choose a password and pick a plan. ReferralCandy then sends you back to the plugin.
+4. Open your ReferralCandy dashboard and launch a referral campaign.
+5. In the plugin, go to Settings and check the order status and checkout options.
 
-**Note: If you have already completed your account setup in the ReferralCandy dashboard, you may skip step 1.**
+If this store already has a ReferralCandy account, you can connect it in either of two ways:
 
-1. Start Your Free Trial: [Sign up here](https://my.referralcandy.com/signup?utm_source=woocommerce-plugin&utm_medium=plugin&utm_campaign=woocommerce-integration-signup).
-2. Integrate with WooCommerce: In your dashboard, go to ["Integrations" > "WooCommerce"](https://my.referralcandy.com/integrations/woocommerce).
-3. Enter API Details: Copy your API Access ID, App ID, and Secret Key and paste it in the Woocommerce plugin integration page.
+* In the plugin, step 3 shows "Account found". Click "Confirm connection" and approve access in WooCommerce.
+* In your ReferralCandy dashboard, go to [Integrations > WooCommerce](https://my.referralcandy.com/integrations/woocommerce). Enter your store URL, click "Connect WooCommerce", and approve access in your WordPress admin.
 
-That's it! Your store is now connected. A purchase is required to confirm integration success.
+If you use version 2.x of the plugin, update it to the latest version. Your existing API keys continue to work after the update. To replace the keys with the WooCommerce connection, open ReferralCandy > Overview and click "Connect through WooCommerce".
 
-Need help with integration? Check out our [blog](https://www.referralcandy.com/blog/woocommerce-setup?utm_source=woocommerce-plugin&utm_medium=plugin&utm_campaign=woocommerce-integration-blog) for an extensive guide and useful tips.
+For help, see the [help center](https://help.referralcandy.com/).
 
 == Frequently Asked Questions ==
 
@@ -87,6 +90,9 @@ We maintain a list of FAQs on our [help page](https://help.referralcandy.com/)!
 1. ReferralCandy for WooCommerce Plugin Settings Page
 
 == Changelog ==
+
+= 3.0.2 =
+* Update installation instructions
 
 = 3.0.1 =
 * A store connected from the ReferralCandy dashboard now recognises itself, instead of asking you to confirm a connection you had already made
