@@ -125,7 +125,12 @@ Visit the [ReferralCandy Help Center](https://help.referralcandy.com/) for setup
 
 == Screenshots ==
 
-1. ReferralCandy for WooCommerce Plugin Settings Page
+1. Offer for friends
+2. Set up referrals with AI
+3. Add it with no code
+4. Affiliates too
+5. Rewards that grow
+6. Works with your stack
 
 == Changelog ==
 
