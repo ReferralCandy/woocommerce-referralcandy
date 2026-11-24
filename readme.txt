@@ -5,7 +5,7 @@ Tags: referral, referral marketing, affiliate, affiliate marketing, loyalty
 Requires at least: 6.4
 Requires PHP: 7.4
 Tested up to: 7.1
-Stable tag: 3.0.2
+Stable tag: 3.0.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -133,6 +133,10 @@ Visit the [ReferralCandy Help Center](https://help.referralcandy.com/) for setup
 6. Works with your stack
 
 == Changelog ==
+
+= 3.0.3 =
+* Rewrite the plugin description, installation steps and FAQ
+* New screenshots
 
 = 3.0.2 =
 * Update installation instructions
