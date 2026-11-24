@@ -1,7 +1,7 @@
-=== ReferralCandy for WooCommerce – Advanced Referral & Affiliate Program ===
+=== Referral Candy – Advanced Referral & Affiliate Program ===
 
 Contributors: referralcandy
-Tags: referral program, customer referral program, referral software, refer-a-friend, affiliate program, referral, word-of-mouth, referral marketing, affiliate, affiliate marketing, affiliate manager, woo commerce
+Tags: referral, referral marketing, affiliate, affiliate marketing, loyalty
 Requires at least: 6.4
 Requires PHP: 7.4
 Tested up to: 7.1
@@ -9,85 +9,128 @@ Stable tag: 3.0.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Drive sales and customer loyalty with ReferralCandy. Set up effective referral and affiliate programs easily to reward and grow your customer base.
+Grow WooCommerce sales with referral and affiliate programs, tiered rewards, auto-coupons, flexible payouts, and REx, your AI referral assistant.
 
 == Description ==
 
-ReferralCandy – Boost Your Sales with Referrals and Affiliate Management
+Give your customers and partners a reason to recommend your store.
 
-[ReferralCandy](http://www.referralcandy.com/) is a powerful tool that allows you to automate customer referral campaigns and now includes affiliate tracking and management features for your WooCommerce store.
+[ReferralCandy](http://www.referralcandy.com/) helps WooCommerce stores run customer referral and affiliate programs from one account. Invite customers to refer friends, recruit affiliates, track the purchases they bring in, and reward them when those purchases qualify.
 
-= Get More Sales with Referrals and Affiliate Management =
+Choose your rewards, make the program look like your brand, and let ReferralCandy handle referral tracking and supported reward delivery. REx, your built-in Referral Expert, helps you choose incentives, manage your campaigns, and understand your results.
 
-ReferralCandy helps Woocommerce stores attract customers, increase sales and grow using the power of referral, affiliate marketing and rewards. Referral programs and affiliate programs allow you to retain customers and reward them when they refer their friends. Customers get a referral link they can share with friends to promote the brand. Referral and affiliate programs work for all industries: fashion, nutrition, electronics, home, pet and more.
+= Referral and affiliate programs for WooCommerce =
 
-1. Reward customers for referring their friends and affiliates for promoting your store.
-2. Easy to install. 7-day risk-free trial. Start today!
-3. Create a customer referral and affiliate management program to grow your sales with automated tracking and rewards.
+* **Run multiple campaigns.** Give customers, creators, ambassadors, or other partners their own campaigns, with separate audiences, rewards, and designs. Use segments and imported contact lists to choose who can join.
 
-ReferralCandy helps WooCommerce stores attract new customers, increase sales, and grow through the power of referral and affiliate marketing. Customers and affiliates can easily share a personalized referral link to promote your brand. Referral and affiliate programs work across industries: fashion, nutrition, electronics, home, pet, and more.
+* **Recruit and approve affiliates.** Share a branded application page or embed a signup form on your site. Customize application questions and review applicants before accepting them. Invite partners individually or by CSV when you’ve already chosen who to work with; direct invitations skip the approval queue. [Affiliate signup options](https://help.referralcandy.com/en/articles/10138727-managing-affiliate-signups).
 
-= What’s New: Affiliate Tracking & Management =
+* **Give customers and affiliates their own portals.** Customers can find their referral link, follow their progress, and view earned rewards. Affiliates can check clicks, sales, commissions, and payout history. Enable the optional Assets page to give partners product images, captions, and talking points they can use. [Explore the portals](https://help.referralcandy.com/en/articles/2457815-advocate-and-affiliate-portals).
 
-ReferralCandy now helps you manage affiliates alongside referrals, simplifying how you track and reward performance.
+= Rewards that fit your program =
 
-1. Track affiliate contributions: Monitor sales, clicks, and conversions from your affiliate partners.
-2. Automate affiliate rewards: Easily issue payments via cash, coupons, or other rewards.
-3. Manage existing affiliates: No need for an affiliate network — invite and track your own partners.
+* **Create WooCommerce coupons automatically.** On the new WooCommerce connection, ReferralCandy can create percentage or fixed-amount friend offers and advocate reward coupons in your store. Campaigns configured for automatic codes don’t need batches of coupons uploaded by hand. [How automatic coupons work](https://help.referralcandy.com/en/articles/11886440-other-platforms-advocate-reward-coupon).
 
-= Key Features =
+* **Build tiered rewards with FlexiTiers.** Offer different rewards or commissions as customers and affiliates reach referral milestones. Combine up to two supported rewards in a tier, create repeating milestones, or choose what happens after the final tier. [Learn about FlexiTiers](https://help.referralcandy.com/en/articles/10335770-using-flexitiers-to-set-up-tiered-rewards).
 
-1. Set up a referral or affiliate program and start generating sales in 30 minutes or less.
-2. Enable post-purchase popups, emails, and landing pages to recruit customers and affiliates into your program.
-3. Automate rewards: Offer cash, coupons, or discounts for successful referrals and affiliate-driven sales.
-4. Customize your referral and affiliate program with your brand’s logo, colors, and imagery.
-5. Integrate with tools like Klaviyo, ReCharge, Skio, Awtomic, Bold, Loop, Appstle, Stay, and Seal.
-6. Easily add a refer-a-friend and affiliate management program to your store — no developers needed!
+* **Choose cash, coupons, or custom rewards.** Set a fixed cash amount or percentage commission, reward customers with a discount on their next order, or offer a custom reward such as merchandise that your team fulfills. [Reward options](https://help.referralcandy.com/en/articles/2457813-advocate-reward-types).
 
-= How ReferralCandy works: =
+* **Pay through PayPal or Tremendous.** With Tremendous, recipients choose from the reward options you enable, such as gift cards or prepaid cards, subject to country availability. Affiliate campaigns also support self-managed payouts: export a payout file, pay partners through your own accounts, and record the payments in ReferralCandy. Cash payouts require an eligible referral, completed review, and funding. [Cash payout options](https://help.referralcandy.com/en/articles/9948421-advocate-reward-cash).
 
-A customer or affiliate shares their personalized referral link.
-Their friends or audience make a purchase using the shared link.
-The referrer or affiliate earns a reward for every successful referral.
+= Review purchases and protect your rewards =
 
-= Everybody wins =
+Set a [purchase review period](https://help.referralcandy.com/en/articles/11951001-other-platforms-setting-a-purchase-review-period) that fits your return policy, giving you time to check referred orders before rewards are issued.
 
-1. Customers and affiliates get rewarded.
-2. Friends and audiences enjoy discounts.
-3. You grow sales and acquire new customers.
+With the new WooCommerce connection, ReferralCandy picks up refunds and cancellations during that period and updates the referred purchase amount. Partial refunds adjust the amount too. See the refund FAQ below for reward eligibility and timing.
 
-ReferralCandy tracks and manages all referral and affiliate activity seamlessly, so you don’t have to worry about the details.
+ReferralCandy blocks clear self-referrals and flags suspicious activity for review. Use the Fraud Center to investigate referrals, disqualify invalid purchases, and ban contacts who abuse your program. [Fraud protection](https://help.referralcandy.com/en/articles/2457877-automated-fraud-prevention-mechanisms).
 
-Learn about the details on our [How ReferralCandy Works](https://www.referralcandy.com/how-it-works) page.
+= Make the experience your own =
 
-https://www.youtube.com/watch?v=arlElJkyGwc
+Invite customers through post-purchase popups, hosted signup pages, embedded forms, and referral emails. Customize your logo, colors, fonts, images, and copy across campaign pages and emails.
+
+Use the block email editor on upgraded themes to arrange content and preview it on desktop and mobile. Support customers in multiple languages, and let them share through channels such as WhatsApp, Facebook, and email. Available editing controls depend on your theme. [Customization options](https://help.referralcandy.com/en/articles/12001450-other-platforms-customizing-your-referral-emails-pages-and-widgets).
+
+= Get help from REx, your Referral Expert =
+
+Ask REx for help choosing rewards, improving campaign copy, making supported campaign changes, or understanding referral performance. It can use your campaign settings, analytics, and referral records to answer questions about your program. Open Referral Expert from your ReferralCandy dashboard whenever you need it. [Meet Referral Expert](https://help.referralcandy.com/en/articles/17327196-referral-expert).
+
+= See what your program brings in =
+
+Track referral revenue, referred purchases, repeat purchases from referred customers, sharing activity, and top referrers. Review affiliate performance and commissions separately, filter by campaign and date, and export reports for your team. [Analytics and reports](https://help.referralcandy.com/en/articles/12035297-other-platforms-analytics-and-reports).
+
+= Connect your existing tools =
+
+* **Email marketing:** Connect Klaviyo, Mailchimp, Customer.io, Brevo, and Omnisend to bring your audience into your program and use personal referral links in your emails. Supported event integrations also let you build automations around referral activity; capabilities and setup differ by provider.
+
+* **Analytics and advertising:** Use Google Analytics 4, Google Ads, Meta Pixel, and AdRoll to measure referral-page activity or build remarketing audiences.
+
+* **Rewards and payouts:** Connect Tremendous to deliver rewards through the options you choose.
+
+* **Support, social proof, and workflows:** View referral details in Gorgias, show referral activity with Fomo, or connect supported workflows through Zapier.
+
+Some newer integrations are rolling out by account. If Customer.io, Brevo, Omnisend, or Gorgias isn’t visible in your dashboard, contact support to check availability. Third-party accounts and any required plans are separate.
+
+[Explore integration guides](https://help.referralcandy.com/en/articles/2457839-integration-overview).
+
+= Pricing and free trial =
+
+The plugin is free to install and connects your store to the ReferralCandy service. A paid ReferralCandy account is required after the 7-day free trial. Subscription charges and any applicable success fees depend on your plan; customer rewards and applicable payout-provider charges are separate.
+
+[See current pricing](https://www.referralcandy.com/pricing/) or [start your WooCommerce signup](https://my.referralcandy.com/signup/woocommerce) to review the plans available to your store.
+
+https://www.youtube.com/watch?v=2GefAYnEIvI
 
 == Installation ==
 
-The plugin requires WooCommerce 9.0.1 or higher, and the store must use HTTPS.
+Requires WooCommerce 9.0.1+, WordPress 6.4+, and PHP 7.4+. Use a public HTTPS store with a reachable WordPress REST API, and sign in as an administrator who can manage WooCommerce.
 
-1. Install and activate the plugin.
-2. In the WordPress admin menu, open ReferralCandy.
-3. Click "Create account & connect store". In WooCommerce, approve access for ReferralCandy. Then choose a password and pick a plan. ReferralCandy then sends you back to the plugin.
-4. Open your ReferralCandy dashboard and launch a referral campaign.
-5. In the plugin, go to Settings and check the order status and checkout options.
+1. In WordPress, go to **Plugins > Add New Plugin**, search for **ReferralCandy**, install the plugin published by ReferralCandy, and activate it.
+2. Open **ReferralCandy** in the WordPress menu. Select **Create account & connect store**, or **Confirm connection** for an existing account.
+3. Review WooCommerce’s access request and click **Approve**. You don’t need to copy API keys.
+4. Complete your ReferralCandy account details and choose a plan.
+5. Set your campaign’s rewards, audience, emails, and design. Test the referral experience, then set the campaign to **Live**.
 
-If this store already has a ReferralCandy account, you can connect it in either of two ways:
+[Follow the WooCommerce setup guide](https://help.referralcandy.com/en/articles/2457859-woocommerce-integration-guide).
 
-* In the plugin, step 3 shows "Account found". Click "Confirm connection" and approve access in WooCommerce.
-* In your ReferralCandy dashboard, go to [Integrations > WooCommerce](https://my.referralcandy.com/integrations/woocommerce). Enter your store URL, click "Connect WooCommerce", and approve access in your WordPress admin.
+== Frequently asked questions ==
 
-If you use version 2.x of the plugin, update it to the latest version. Your existing API keys continue to work after the update. To replace the keys with the WooCommerce connection, open ReferralCandy > Overview and click "Connect through WooCommerce".
+= Can I run referral and affiliate programs together? =
 
-For help, see the [help center](https://help.referralcandy.com/).
+Yes. Run both from one ReferralCandy account, with separate campaigns, audiences, rewards, and reporting.
 
-== Frequently Asked Questions ==
+= Do I need a developer? =
 
-We maintain a list of FAQs on our [help page](https://help.referralcandy.com/)!
+The standard WooCommerce connection and post-purchase popup don’t require coding. Embedded forms and more advanced customizations may require adding a snippet or help from a developer.
+
+= Does the plugin support HPOS and block checkout? =
+
+Yes. The plugin supports High-Performance Order Storage (HPOS), classic checkout, and WooCommerce block checkout.
+
+= What happens when I refund a referred order? =
+
+The new connection updates the purchase amount for refunds and cancellations received during review. Set your minimum purchase amount above zero so fully refunded or cancelled orders cannot earn rewards. Partial refunds can also make an order ineligible. Rewards already issued cannot be recalled. Legacy connections require manual review of refunds. [WooCommerce refund details](https://help.referralcandy.com/en/articles/2457859-woocommerce-integration-guide).
+
+= What happens when I upgrade from plugin 2.x? =
+
+Your existing keys and settings keep working. Connect through WooCommerce when you’re ready to use the new connection. Existing campaigns keep uploaded coupon codes until you change their reward and friend-offer settings to automatic codes.
+
+= How do Tremendous payouts work? =
+
+Connect an approved Tremendous account, choose your funding source, and enable Tremendous in your campaign’s cash payout settings. Recipients receive an email to claim their reward from the options you make available. Timing depends on referral eligibility, the review period, and funding. [Tremendous setup guide](https://help.referralcandy.com/en/articles/13424945-integration-tremendous).
+
+= Where can I get help? =
+
+Visit the [ReferralCandy Help Center](https://help.referralcandy.com/) for setup guides, troubleshooting, and contact options.
 
 == Screenshots ==
 
-1. ReferralCandy for WooCommerce Plugin Settings Page
+1. Offer for friends
+2. Set up referrals with AI
+3. Add it with no code
+4. Affiliates too
+5. Rewards that grow
+6. Works with your stack
 
 == Changelog ==
 
